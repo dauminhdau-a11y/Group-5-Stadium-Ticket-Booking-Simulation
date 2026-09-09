@@ -11,6 +11,7 @@
 | 2 | [Tên thành viên 2] | [Nhập MSSV] | Thành viên |
 | 3 | [Tên thành viên 3] | [Nhập MSSV] | Thành viên |
 | 4 | Thái Quang Huy | QS190001 | Thành viên |
+| 5 | [Tên thành viên 3] | [Nhập MSSV] | Thành viên |
 ## Danh sách chức năng hệ thống
 
 **1. Chức năng dành cho người mua (Buyer)**
