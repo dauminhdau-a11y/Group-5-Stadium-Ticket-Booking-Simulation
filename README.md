@@ -1,4 +1,18 @@
 # Group-5-Stadium-Ticket-Booking-Simulation
+# 🏟️ LAB211: Stadium Ticket Booking Simulation
+
+**Trường:** Đại học FPT
+**Môn học:** Java OOP Nâng cao (MVC Architecture & Multithreading)
+**Nhóm thực hiện:** Nhóm 5
+
+## 👥 Danh sách thành viên
+
+| STT | Họ và tên | Mã số SV (MSSV) | Vai trò |
+| :---: | :--- | :--- | :--- |
+| 1 | Tên thành viên 1 | [Nhập MSSV] | [Nhóm trưởng / Thành viên] |
+| 2 | [Tên thành viên 2] | [Nhập MSSV] | [Thành viên] |
+| 3 | [Tên thành viên 3] | [Nhập MSSV] | [Thành viên] |
+| 4 | [Tên thành viên 4] | [Nhập MSSV] | [Thành viên] |
 ## Danh sách chức năng hệ thống
 
 **1. Chức năng dành cho người mua (Buyer)**
