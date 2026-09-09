@@ -8,10 +8,10 @@
 | STT | Họ và tên | Mã số SV (MSSV) | Vai trò |
 | :---: | :--- | :--- | :--- |
 | 1 | Trần Minh | QE200074 | Nhóm trưởng |
-| 2 | [Tên thành viên 2] | [Nhập MSSV] | Thành viên |
-| 3 | [Tên thành viên 3] | [Nhập MSSV] | Thành viên |
+| 2 | Nguyễn Anh Khoa |QE200060 | Thành viên |
+| 3 | Lê Đỗ Anh Khoa | QE210269 | Thành viên |
 | 4 | Thái Quang Huy | QS190001 | Thành viên |
-| 5 | [Tên thành viên 3] | [Nhập MSSV] | Thành viên |
+| 5 | Nguyễn Tấn Đạt | QE200091 | Thành viên |
 ## Danh sách chức năng hệ thống
 
 **1. Chức năng dành cho người mua (Buyer)**
