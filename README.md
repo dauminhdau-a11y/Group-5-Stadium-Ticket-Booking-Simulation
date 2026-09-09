@@ -9,10 +9,10 @@
 
 | STT | Họ và tên | Mã số SV (MSSV) | Vai trò |
 | :---: | :--- | :--- | :--- |
-| 1 | Tên thành viên 1 | [Nhập MSSV] | [Nhóm trưởng / Thành viên] |
-| 2 | [Tên thành viên 2] | [Nhập MSSV] | [Thành viên] |
-| 3 | [Tên thành viên 3] | [Nhập MSSV] | [Thành viên] |
-| 4 | [Tên thành viên 4] | [Nhập MSSV] | [Thành viên] |
+| 1 | [Tên thành viên 1] | [Nhập MSSV] | Nhóm trưởng |
+| 2 | [Tên thành viên 2] | [Nhập MSSV] | Thành viên |
+| 3 | [Tên thành viên 3] | [Nhập MSSV] | Thành viên |
+| 4 | Thái Quang Huy | QS190001 | Thành viên |
 ## Danh sách chức năng hệ thống
 
 **1. Chức năng dành cho người mua (Buyer)**
@@ -38,4 +38,4 @@
 
 **3. Chức năng dành cho Admin**
 * Quản lý trận đấu, sân vận động (Tạo mới, sửa thông tin, xóa).
-* [Bổ sung thêm các tính năng quản lý hệ thống khác tại đây]
+* Quản lý doanh thu
