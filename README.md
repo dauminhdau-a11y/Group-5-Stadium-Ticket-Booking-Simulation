@@ -7,7 +7,7 @@
 
 | STT | Họ và tên | Mã số SV (MSSV) | Vai trò |
 | :---: | :--- | :--- | :--- |
-| 1 | [Tên thành viên 1] | [Nhập MSSV] | Nhóm trưởng |
+| 1 | Trần Minh | QE200074 | Nhóm trưởng |
 | 2 | [Tên thành viên 2] | [Nhập MSSV] | Thành viên |
 | 3 | [Tên thành viên 3] | [Nhập MSSV] | Thành viên |
 | 4 | Thái Quang Huy | QS190001 | Thành viên |
