@@ -1,8 +1,6 @@
 # Group-5-Stadium-Ticket-Booking-Simulation
 # 🏟️ LAB211: Stadium Ticket Booking Simulation
 
-**Trường:** Đại học FPT
-**Môn học:** Java OOP Nâng cao (MVC Architecture & Multithreading)
 **Nhóm thực hiện:** Nhóm 5
 
 ## 👥 Danh sách thành viên
