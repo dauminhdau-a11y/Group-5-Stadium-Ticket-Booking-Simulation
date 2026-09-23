@@ -1,48 +1,64 @@
 package com.stadium.model;
 
-import com.stadium.model.enums.UserRole;
 import com.stadium.model.interfaces.BaseEntity;
+import java.util.List;
+import java.util.ArrayList;
 
 public class User implements BaseEntity {
-    private String id;
+    private String userId;
     private String username;
-    private String passwordHash;
-    private UserRole role;
+    private String password;
+    private String email;
+    private String role;
 
     public User() {
     }
 
-    public User(String id, String username, String passwordHash, UserRole role) {
-        this.id = id;
+    public User(String userId, String username, String password, String email, String role) {
+        this.userId = userId;
         this.username = username;
-        this.passwordHash = passwordHash;
+        this.password = password;
+        this.email = email;
         this.role = role;
     }
 
     @Override
-    public String getId() { return id; }
-    public void setId(String id) { this.id = id; }
+    public String getId() { return userId; }
+    public String getUserId() { return userId; }
+    public void setUserId(String userId) { this.userId = userId; }
+    public void setId(String id) { this.userId = id; }
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }
-    public String getPasswordHash() { return passwordHash; }
-    public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
-    public UserRole getRole() { return role; }
-    public void setRole(UserRole role) { this.role = role; }
+    public String getPassword() { return password; }
+    public void setPassword(String password) { this.password = password; }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+    public String getRole() { return role; }
+    public void setRole(String role) { this.role = role; }
+
+    public boolean login() { return false; }
+    public void logout() { }
+    public List<Match> searchMatch(String keyword) { return new ArrayList<>(); }
+    public List<Match> findMatch(String criteria) { return new ArrayList<>(); }
+    public Match viewMatchDetails(String matchId) { return null; }
+    public List<Ticket> viewMyTickets() { return new ArrayList<>(); }
 
     @Override
     public String toCsvLine() {
-        return String.join(",", id == null ? "" : id, username == null ? "" : username,
-                passwordHash == null ? "" : passwordHash, role == null ? "" : role.name());
+        return String.join(",", value(userId), value(username), value(password), value(email), value(role));
     }
 
     @Override
     public void fromCsvLine(String csvLine) {
-        String[] values = CsvValues.split(csvLine, 4);
-        id = values[0];
+        String[] values = CsvValues.split(csvLine, 5);
+        userId = values[0];
         username = values[1];
-        passwordHash = values[2];
-        role = values[3].isBlank() ? null : UserRole.valueOf(values[3]);
+        password = values[2];
+        email = values[3];
+        role = values[4];
     }
+
+    private static String value(String value) { return value == null ? "" : value; }
 
     static final class CsvValues {
         private CsvValues() { }

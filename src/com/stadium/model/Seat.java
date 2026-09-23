@@ -22,6 +22,17 @@ public class Seat implements BaseEntity {
         this.price = price;
         this.status = SeatStatus.AVAILABLE;
     }
+    public Seat(String seatId, String matchId, String sectionId, String seatNumber,
+                double price, SeatStatus status, long version, long lockTimestamp) {
+        this.seatId = seatId;
+        this.matchId = matchId;
+        this.sectionId = sectionId;
+        this.seatNumber = seatNumber;
+        this.price = price;
+        this.status = status;
+        this.version = version;
+        this.lockTimestamp = lockTimestamp;
+    }
 
     @Override public String getId() { return seatId; }
     public String getSeatId() { return seatId; }
@@ -40,6 +51,9 @@ public class Seat implements BaseEntity {
     public void setVersion(long value) { version = value; }
     public long getLockTimestamp() { return lockTimestamp; }
     public void setLockTimestamp(long value) { lockTimestamp = value; }
+    public boolean lockSeat(String lockedBy) { return false; }
+    public void unlockSeat() { }
+    public void bookSeat() { }
 
     @Override public String toCsvLine() {
         return String.join(",", seatId, matchId, sectionId, seatNumber, Double.toString(price),
