@@ -3,6 +3,7 @@ package com.stadium.repository.interfaces;
 import com.stadium.model.interfaces.BaseEntity;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 public interface CsvRepository<T extends BaseEntity> {
     List<T> findAll();
@@ -10,4 +11,7 @@ public interface CsvRepository<T extends BaseEntity> {
     boolean save(T entity);
     boolean update(T entity);
     boolean deleteById(String id);
+    default List<T> findByCondition(Predicate<T> predicate) {
+        return findAll().stream().filter(predicate).toList();
+    }
 }
