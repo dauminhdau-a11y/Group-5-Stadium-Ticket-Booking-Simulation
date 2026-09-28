@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-public class SeatRepository implements CsvRepository<Seat> {
+public class SeatsRepository implements CsvRepository<Seat> {
     private static final Path FILE_PATH = Paths.get("data", "seats.csv");
 
     @Override
