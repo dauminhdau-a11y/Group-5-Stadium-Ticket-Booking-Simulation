@@ -11,18 +11,15 @@ public class BookingController {
     private SyncMechanism mechanism;
     private CsvRepository<Seat> seatRepo;
     private CsvRepository<BookingTransaction> transRepo;
-    private CsvRepository<Booking> ticketRepo;
 
     private BookingTransaction bookNoLock(String fanId, String matchId, List<String> seatIds) throws Exception {
         return bookSynchronized(fanId, matchId, seatIds);
     }
 
-    public BookingController(SyncMechanism mechanism, CsvRepository<Seat> seatRepo, CsvRepository<BookingTransaction> transRepo,
-        CsvRepository<Booking> ticketRepo) {
+    public BookingController(SyncMechanism mechanism, CsvRepository<Seat> seatRepo, CsvRepository<BookingTransaction> transRepo) {
         this.mechanism = mechanism;
         this.seatRepo = seatRepo;
         this.transRepo = transRepo;
-        this.ticketRepo = ticketRepo;
     }
     public BookingTransaction bookSeats(String fanId, String matchId, List<String> seatIds) throws Exception {
         if(this.mechanism == SyncMechanism.SYNCHRONIZED){
@@ -37,12 +34,12 @@ public class BookingController {
         for(String seatId : seatIds){
             Seat seat = seatRepo.findById(seatId);
             if(seat == null){
-                throw new Exception("Không tìm thấy mã ghế: " + seatId);
+                throw new Exception("Seat ID not found: " + seatId);
             }
             if(seat.getStatus() == SeatStatus.AVAILABLE){
                 seatsToBook.add(seat);
             } else{
-                throw new Exception("Rất tiếc, ghế  " + seatId + " đã được đặt trước rồi.");
+                throw new Exception("Sorry, seat " + seatId + " is already booked.");
             }
             seatsToBook.add(seat);
         }

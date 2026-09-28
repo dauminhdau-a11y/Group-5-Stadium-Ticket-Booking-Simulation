@@ -15,29 +15,29 @@ public class MainView {
             System.out.println("=====================================");
             System.out.println("    STADIUM TICKET BOOKING SYSTEM    ");
             System.out.println("=====================================");
-            System.out.println("1. Xem danh sách ghế trống");
-            System.out.println("2. Đặt vé trực tuyến");
-            System.out.println("3. Chạy công cụ giả lập");
-            System.out.println("0. Thoát chương trình");
-            System.out.print("Chọn chức năng (0-3): ");
+            System.out.println("1. View available seats");
+            System.out.println("2. Book tickets online");
+            System.out.println("3. Run simulation tool");
+            System.out.println("0. Exit program");
+            System.out.print("Select an option (0-3): ");
             
             int choice = getUserChoice();
 
             switch (choice) {
                 case 1:
-                    System.out.println("Chức năng đang phát triển...");
+                    System.out.println("Feature under development...");
                     break;
                 case 2:
                     bookingView.showBookingForm();
                     break;
                 case 3:
-                    System.out.println("Chức năng đang phát triển...");
+                    System.out.println("Feature under development...");
                     break;
                 case 0:
-                    System.out.println("Cảm ơn bạn đã sử dụng hệ thống. Tạm biệt!");
+                    System.out.println("Thank you for using the system. Goodbye!");
                     System.exit(0);
                 default:
-                    System.out.println("Lựa chọn không hợp lệ. Vui lòng thử lại.");
+                    System.out.println("Invalid choice. Please try again.");
             }
         }
     }

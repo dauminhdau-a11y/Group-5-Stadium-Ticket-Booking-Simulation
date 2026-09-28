@@ -1,6 +1,8 @@
 package repository;
 
+import model.Booking;
 import model.BookingTransaction;
+import model.Seat;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -32,7 +34,7 @@ public class TransactionRepository implements CsvRepository<BookingTransaction> 
 
             }
         } catch (IOException e) {
-            System.out.println("Lỗi đọc file giao dịch: " + e.getMessage());
+            System.out.println("Error reading transactions file: " + e.getMessage());
         }
         return transactions;
     }
@@ -42,7 +44,7 @@ public class TransactionRepository implements CsvRepository<BookingTransaction> 
             bw.write(entity.toCsvLine());
             bw.newLine();
         } catch (IOException e) {
-            System.out.println("Lỗi ghi file giao dịch: " + e.getMessage());
+            System.out.println("Error writing transactions file: " + e.getMessage());
         }
     }
     @Override 
@@ -72,7 +74,7 @@ public class TransactionRepository implements CsvRepository<BookingTransaction> 
                 bw.newLine();
             }
         }catch(IOException e){
-            System.out.println("Lỗi cập nhật file khi xóa giao dịch: " + e.getMessage());
+            System.out.println("Error updating file when deleting transaction: " + e.getMessage());
         }
     }
     public List<BookingTransaction> findByFanId(String fanId){
