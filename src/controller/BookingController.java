@@ -12,23 +12,27 @@ public class BookingController {
     private CsvRepository<Seat> seatRepo;
     private CsvRepository<BookingTransaction> transRepo;
 
-    private BookingTransaction bookNoLock(String fanId, String matchId, List<String> seatIds) throws Exception {
+    private BookingTransaction bookNoLock(String fanId, String matchId, 
+            List<String> seatIds) throws Exception {
         return bookSynchronized(fanId, matchId, seatIds);
     }
 
-    public BookingController(SyncMechanism mechanism, CsvRepository<Seat> seatRepo, CsvRepository<BookingTransaction> transRepo) {
+    public BookingController(SyncMechanism mechanism, CsvRepository<Seat> seatRepo, 
+            CsvRepository<BookingTransaction> transRepo) {
         this.mechanism = mechanism;
         this.seatRepo = seatRepo;
         this.transRepo = transRepo;
     }
-    public BookingTransaction bookSeats(String fanId, String matchId, List<String> seatIds) throws Exception {
+    public BookingTransaction bookSeats(String fanId, String matchId, 
+            List<String> seatIds) throws Exception {
         if(this.mechanism == SyncMechanism.SYNCHRONIZED){
             return bookSynchronized(fanId, matchId, seatIds);
         } else{
             return bookNoLock(fanId, matchId, seatIds);
         }
     }
-    private BookingTransaction bookSynchronized(String fanId, String matchId, List<String> seatIds) throws Exception {
+    private BookingTransaction bookSynchronized(String fanId, String matchId, 
+            List<String> seatIds) throws Exception {
         List<Seat> seatsToBook = new ArrayList<>();
 
         for(String seatId : seatIds){
@@ -47,7 +51,9 @@ public class BookingController {
         double totalAmount = seatsToBook.size() * ticketPrice;
 
         String transId = "TXN-" + UUID.randomUUID().toString().substring(0, 8);
-        BookingTransaction transaction = new BookingTransaction(transId, fanId, seatsToBook.get(0).getMatchId(), totalAmount, java.time.LocalDateTime.now(), BookingStatus.CONFIRMED);
+        BookingTransaction transaction = new BookingTransaction(transId, 
+                fanId, seatsToBook.get(0).getMatchId(), totalAmount, 
+                java.time.LocalDateTime.now(), BookingStatus.CONFIRMED);
         transRepo.save(transaction);
         return transaction;
     }
