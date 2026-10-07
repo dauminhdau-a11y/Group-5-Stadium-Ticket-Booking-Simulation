@@ -46,4 +46,4 @@
 **3. Chức năng dành cho Admin**
 * Quản lý tài khoản, vé, chỗ ngồi, trận đấu, sân vận động (Tạo mới, sửa thông tin, xóa).
 * Quản lý doanh thu
-* Sửa lỗi thủ công
+* Chạy giả lập
