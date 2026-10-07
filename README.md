@@ -33,8 +33,6 @@
 * Trả lại vé (Điều kiện: Phải thực hiện trước trận đấu ít nhất 12 tiếng).
 * Nhận thông báo khi trận đấu sắp diễn ra.
 * Áp dụng voucher giảm giá (Giới hạn sử dụng 1 lần/voucher).
-* Thêm trận đấu vào danh sách yêu thích (Wishlist).
-* Đánh giá trận đấu/dịch vụ.
 
 **2. Chức năng dành cho Staff**
 * Xem danh sách khách hàng đã mua vé.
