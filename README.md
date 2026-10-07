@@ -14,14 +14,14 @@
 | 5 | Nguyễn Tấn Đạt | QE200091 | Thành viên |
 ## Danh sách chức năng hệ thống
 
-**1. Chức năng dành cho khách (Guest)**
+**1. Chức năng dành cho Guest**
 * Đăng ký tài khoản (có ràng buộc dữ liệu).
 * Đăng nhập hệ thống.
 * Xem và chỉnh sửa thông tin cá nhân (Profile).
 * Xem danh sách trận đấu; hỗ trợ lọc theo ngày, sân vận động, đội bóng (hiển thị trạng thái "Hết vé" đối với các trận đã sold out).
 * Xem danh sách khán đài kèm bảng giá vé (tích hợp sơ đồ đánh dấu trạng thái ghế đã đặt/chưa đặt).
 
-**1. Chức năng dành cho người mua (Fan)**
+**1. Chức năng dành cho Fan**
 * Đăng xuất hệ thống.
 * Xem và chỉnh sửa thông tin cá nhân (Profile).
 * Xem danh sách trận đấu; hỗ trợ lọc theo ngày, sân vận động, đội bóng (hiển thị trạng thái "Hết vé" đối với các trận đã sold out).
@@ -36,7 +36,7 @@
 * Thêm trận đấu vào danh sách yêu thích (Wishlist).
 * Đánh giá trận đấu/dịch vụ.
 
-**2. Chức năng dành cho người bán (Staff)**
+**2. Chức năng dành cho Staff**
 * Xem danh sách khách hàng đã mua vé.
 * Xác nhận trạng thái mua vé và xử lý yêu cầu trả vé.
 * Xuất hóa đơn giao dịch.
