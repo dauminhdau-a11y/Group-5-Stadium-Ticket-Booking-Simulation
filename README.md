@@ -21,7 +21,7 @@
 * Xem danh sách trận đấu; hỗ trợ lọc theo ngày, sân vận động, đội bóng (hiển thị trạng thái "Hết vé" đối với các trận đã sold out).
 * Xem danh sách khán đài kèm bảng giá vé (tích hợp sơ đồ đánh dấu trạng thái ghế đã đặt/chưa đặt).
 
-**1. Chức năng dành cho người mua (Buyer)**
+**1. Chức năng dành cho người mua (Fan)**
 * Đăng xuất hệ thống.
 * Xem và chỉnh sửa thông tin cá nhân (Profile).
 * Xem danh sách trận đấu; hỗ trợ lọc theo ngày, sân vận động, đội bóng (hiển thị trạng thái "Hết vé" đối với các trận đã sold out).
@@ -36,12 +36,14 @@
 * Thêm trận đấu vào danh sách yêu thích (Wishlist).
 * Đánh giá trận đấu/dịch vụ.
 
-**2. Chức năng dành cho người bán (Seller)**
+**2. Chức năng dành cho người bán (Staff)**
 * Xem danh sách khách hàng đã mua vé.
 * Xác nhận trạng thái mua vé và xử lý yêu cầu trả vé.
 * Xuất hóa đơn giao dịch.
+* Xem ca làm việc
+* Bán vé tại quầy
 
 **3. Chức năng dành cho Admin**
-* Quản lý trận đấu, sân vận động (Tạo mới, sửa thông tin, xóa).
+* Quản lý tài khoản, vé, chỗ ngồi, trận đấu, sân vận động (Tạo mới, sửa thông tin, xóa).
 * Quản lý doanh thu
 * Sửa lỗi thủ công
