@@ -17,9 +17,7 @@
 **1. Chức năng dành cho Guest**
 * Đăng ký tài khoản (có ràng buộc dữ liệu).
 * Đăng nhập hệ thống.
-* Xem và chỉnh sửa thông tin cá nhân (Profile).
 * Xem danh sách trận đấu; hỗ trợ lọc theo ngày, sân vận động, đội bóng (hiển thị trạng thái "Hết vé" đối với các trận đã sold out).
-* Xem danh sách khán đài kèm bảng giá vé (tích hợp sơ đồ đánh dấu trạng thái ghế đã đặt/chưa đặt).
 
 **1. Chức năng dành cho Fan**
 * Đăng xuất hệ thống.
