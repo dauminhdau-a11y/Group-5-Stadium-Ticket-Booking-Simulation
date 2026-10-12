@@ -3,5 +3,7 @@ package com.model.enums;
 public enum BookingStatus {
     PENDING,
     CONFIRMED,
-    CANCELLED
+    CANCELLED,
+    REFUND_REQUESTED,
+    REFUNDED
 }

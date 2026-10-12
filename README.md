@@ -45,3 +45,53 @@
 * Quản lý trận đấu, sân vận động (Tạo mới, sửa thông tin, xóa).
 * Quản lý doanh thu
 * Sửa lỗi thủ công
+
+
+
+
+# Module Bán vé tại quầy (Offline Selling Flow)
+
+Bộ code Java thuần, không phụ thuộc thư viện ngoài, mô phỏng độc lập luồng bán vé tại quầy
+theo kiến trúc: SellerView -> SellerController -> Repositories -> Entities.
+
+## Cách chạy
+
+```bash
+javac seller/*.java -d out
+java -Dfile.encoding=UTF-8 -cp out seller.SellerDemo
+```
+
+Nếu tiếng Việt hiển thị lỗi font trên terminal Windows, chạy thêm:
+```bash
+chcp 65001
+```
+trước khi chạy lệnh java ở trên.
+
+## Chạy giao diện quầy tương tác (nhập tay)
+
+Sửa `seller.SellerDemo` hoặc tạo file main mới gọi:
+```java
+SellerView view = new SellerView(controller);
+view.showMenu();
+```
+
+## Các điểm đã bổ sung so với Class Diagram gốc (đã thống nhất ở phần phân tích trước)
+
+1. `Ticket.transactionId` + `BookingTransaction.ticketIds`
+   -> để `confirmRefund()` tra đúng các vé thuộc 1 giao dịch (diagram gốc không có liên kết này).
+2. `Seat.matchId`
+   -> để 1 ghế có trạng thái độc lập theo từng trận, tránh việc ghế "dính BOOKED" mãi mãi qua các trận khác nhau.
+3. `SellerController` dùng `synchronized` trên toàn bộ thao tác kiểm tra + cập nhật ghế
+   -> mô phỏng cơ chế `SYNCHRONIZED` trong enum `SyncMechanism`, đảm bảo 2 quầy bán cùng lúc
+      không thể cùng bán trùng 1 ghế (xem "MO PHONG 4" trong SellerDemo).
+
+## Danh sách file
+
+- `BaseEntity.java` — lớp trừu tượng gốc (đúng diagram)
+- `SeatStatus.java`, `TicketStatus.java`, `BookingStatus.java` — enum trạng thái (đúng diagram)
+- `Section.java`, `Seat.java`, `Ticket.java`, `BookingTransaction.java` — Entity
+- `CsvRepository.java`, `InMemoryCsvRepository.java` — interface + lớp nền Repository
+- `SeatRepository.java`, `TicketRepository.java`, `TransactionRepository.java` — Repository cụ thể
+- `SellerController.java` — nghiệp vụ bán vé tại quầy + hoàn tiền
+- `SellerView.java` — giao diện console tương tác thật
+- `SellerDemo.java` — **main class chạy mô phỏng tự động**, seed dữ liệu mẫu và chạy 4 kịch bản demo

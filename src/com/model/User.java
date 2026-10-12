@@ -6,6 +6,8 @@ import com.model.interfaces.BaseEntity;
 
 import java.util.ArrayList;
 
+import com.util.CsvParser;
+
 public class User implements BaseEntity {
     private String userId;
     private String username;
@@ -47,28 +49,20 @@ public class User implements BaseEntity {
 
     @Override
     public String toCsvLine() {
-        return String.join(",", value(userId), value(username), value(password), value(email), value(role));
+        return CsvParser.encode(userId, username, password, email, role);
     }
 
     @Override
     public void fromCsvLine(String csvLine) {
-        String[] values = CsvValues.split(csvLine, 5);
-        userId = values[0];
-        username = values[1];
-        password = values[2];
-        email = values[3];
-        role = values[4];
+        List<String> values = CsvParser.parseLine(csvLine);
+        userId = valueAt(values, 0);
+        username = valueAt(values, 1);
+        password = valueAt(values, 2);
+        email = valueAt(values, 3);
+        role = valueAt(values, 4);
     }
 
-    private static String value(String value) { return value == null ? "" : value; }
-
-    static final class CsvValues {
-        private CsvValues() { }
-        static String[] split(String line, int size) {
-            String[] result = new String[size];
-            String[] values = line == null ? new String[0] : line.split(",", -1);
-            for (int i = 0; i < size; i++) result[i] = i < values.length ? values[i] : "";
-            return result;
-        }
+    private static String valueAt(List<String> values, int index) {
+        return index < values.size() ? values.get(index) : "";
     }
 }

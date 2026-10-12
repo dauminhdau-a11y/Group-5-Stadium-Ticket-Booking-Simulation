@@ -1,0 +1,208 @@
+package controller;
+
+import exception.AppException;
+import exception.MaxTicketsExceededException;
+import exception.SeatAlreadyBookedException;
+import exception.VoucherInvalidException;
+import model.entity.*;
+import model.enums.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import repository.*;
+
+import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+/** JUnit 5 tests of StaffController. Real repositories are used on a temporary folder (one CSV set per test). */
+class StaffControllerTest {
+    @TempDir Path dir;
+
+    MatchSeatRepository seatRepo;
+    TicketRepository ticketRepo;
+    TransactionRepository transRepo;
+    VoucherRepository voucherRepo;
+    NotificationRepository notiRepo;
+    SessionContext session;
+    StaffController controller;
+    static final String MATCH = "M1";
+    static final String STAFF = "U1";
+
+    @BeforeEach
+    void setUp() {
+        seatRepo = new MatchSeatRepository(dir);
+        ticketRepo = new TicketRepository(dir);
+        transRepo = new TransactionRepository(dir);
+        voucherRepo = new VoucherRepository(dir);
+        notiRepo = new NotificationRepository(dir);
+        session = new SessionContext();
+        session.setUser(new Staff(STAFF, "staff1", "staff123", "s@x.vn", "ST001", "MORNING"));
+        controller = new StaffController(seatRepo, ticketRepo, transRepo, voucherRepo, notiRepo, session);
+        for (int i = 1; i <= 6; i++)
+            seatRepo.save(new MatchSeat("MS" + i, MATCH, "SEC1-A0" + i, 100_000, SeatStatus.AVAILABLE, 0, "", 0));
+        LocalDateTime now = LocalDateTime.now();
+        voucherRepo.save(new Voucher("V1", "SAVE10", 10, now.minusDays(1), now.plusDays(1), true));
+        voucherRepo.save(new Voucher("V2", "OLD", 50, now.minusDays(10), now.minusDays(5), true));
+    }
+
+    // ---------- sellTicketOffline ----------
+    @Test
+    void sellTicketOffline_twoSeats_createsConfirmedTransaction() {
+        BookingTransaction tx = controller.sellTicketOffline(STAFF, MATCH, List.of("MS1", "MS2"), "");
+        assertEquals(BookingStatus.CONFIRMED, tx.getStatus());
+        assertEquals("WALKIN", tx.getFanId());
+        assertEquals(STAFF, tx.getStaffId());
+        assertEquals(200_000, tx.getFinalAmount(), 0.001);
+        assertEquals(SeatStatus.BOOKED, seatRepo.findById("MS1").getStatus());
+        assertEquals(SeatStatus.BOOKED, seatRepo.findById("MS2").getStatus());
+        List<Ticket> tickets = ticketRepo.findByTransaction(tx.getTransactionId());
+        assertEquals(2, tickets.size());
+        assertTrue(tickets.stream().allMatch(t -> t.getStatus() == TicketStatus.CONFIRMED));
+    }
+
+    @Test
+    void sellTicketOffline_exactlyFourSeats_isAllowed() {
+        BookingTransaction tx = controller.sellTicketOffline(STAFF, MATCH, List.of("MS1", "MS2", "MS3", "MS4"), null);
+        assertEquals(4, ticketRepo.findByTransaction(tx.getTransactionId()).size());
+    }
+
+    @Test
+    void sellTicketOffline_fiveSeats_throwsAndHoldsNoSeat() {
+        assertThrows(MaxTicketsExceededException.class,
+                () -> controller.sellTicketOffline(STAFF, MATCH, List.of("MS1", "MS2", "MS3", "MS4", "MS5"), ""));
+        for (int i = 1; i <= 6; i++) assertEquals(SeatStatus.AVAILABLE, seatRepo.findById("MS" + i).getStatus());
+        assertEquals(0, transRepo.count());
+    }
+
+    @Test
+    void sellTicketOffline_validVoucher_appliesDiscount() {
+        BookingTransaction tx = controller.sellTicketOffline(STAFF, MATCH, List.of("MS1", "MS2"), "save10");
+        assertEquals(20_000, tx.getDiscountAmount(), 0.001);
+        assertEquals(180_000, tx.getFinalAmount(), 0.001);
+    }
+
+    @Test
+    void sellTicketOffline_expiredVoucher_throwsAndHoldsNoSeat() {
+        assertThrows(VoucherInvalidException.class, () -> controller.sellTicketOffline(STAFF, MATCH, List.of("MS1"), "OLD"));
+        assertEquals(SeatStatus.AVAILABLE, seatRepo.findById("MS1").getStatus());
+    }
+
+    @Test
+    void sellTicketOffline_secondSeatTaken_releasesFirstSeatAndThrows() {
+        seatRepo.bookSeat("MS2", "SOMEONE-ELSE");                       // another fan holds MS2
+        assertThrows(SeatAlreadyBookedException.class, () -> controller.sellTicketOffline(STAFF, MATCH, List.of("MS1", "MS2"), ""));
+        assertEquals(SeatStatus.AVAILABLE, seatRepo.findById("MS1").getStatus());   // rolled back
+        assertEquals(0, transRepo.count());
+        assertEquals(0, ticketRepo.count());
+    }
+
+    @Test
+    void sellTicketOffline_seatOfAnotherMatch_throws() {
+        seatRepo.save(new MatchSeat("MSX", "OTHER", "SEC1-B01", 100_000, SeatStatus.AVAILABLE, 0, "", 0));
+        assertThrows(AppException.class, () -> controller.sellTicketOffline(STAFF, MATCH, List.of("MSX"), ""));
+    }
+
+    @Test
+    void sellTicketOffline_asFan_isDenied() {
+        session.setUser(new Fan("U9", "fan1", "fan123", "f@x.vn"));
+        assertThrows(AppException.class, () -> controller.sellTicketOffline(STAFF, MATCH, List.of("MS1"), ""));
+        assertEquals(SeatStatus.AVAILABLE, seatRepo.findById("MS1").getStatus());
+    }
+
+    // ---------- confirmPayment ----------
+    private String seedOnline(BookingStatus status, SeatStatus seat, TicketStatus ticket) {
+        seatRepo.save(new MatchSeat("MS1", MATCH, "SEC1-A01", 100_000, seat, 1, "FAN7", System.currentTimeMillis()));
+        transRepo.save(new BookingTransaction("TX1", "FAN7", "", MATCH, "", 100_000, 0, 100_000, LocalDateTime.now(), status));
+        ticketRepo.save(new Ticket("T1", "TX1", "MS1", 100_000, ticket));
+        return "TX1";
+    }
+
+    @Test
+    void confirmPayment_pendingTransaction_confirmsSeatTicketAndNotifiesFan() {
+        String id = seedOnline(BookingStatus.PENDING, SeatStatus.LOCKED, TicketStatus.PENDING);
+        controller.confirmPayment(id);
+        assertEquals(BookingStatus.CONFIRMED, transRepo.findById(id).getStatus());
+        assertEquals(STAFF, transRepo.findById(id).getStaffId());
+        assertEquals(SeatStatus.BOOKED, seatRepo.findById("MS1").getStatus());
+        assertEquals(TicketStatus.CONFIRMED, ticketRepo.findById("T1").getStatus());
+        List<Notification> n = notiRepo.findByUserId("FAN7");
+        assertEquals(1, n.size());
+        assertEquals(NotificationType.PAYMENT_CONFIRMED, n.get(0).getType());
+    }
+
+    @Test
+    void confirmPayment_notPending_throwsAndChangesNothing() {
+        String id = seedOnline(BookingStatus.CONFIRMED, SeatStatus.BOOKED, TicketStatus.CONFIRMED);
+        assertThrows(AppException.class, () -> controller.confirmPayment(id));
+        assertEquals(0, notiRepo.count());
+    }
+
+    @Test
+    void confirmPayment_unknownTransaction_throws() {
+        AppException e = assertThrows(AppException.class, () -> controller.confirmPayment("NOPE"));
+        assertTrue(e.getMessage().contains("Transaction not found"));
+    }
+
+    // ---------- confirmRefund ----------
+    @Test
+    void confirmRefund_requested_releasesSeatAndRefundsTicket() {
+        String id = seedOnline(BookingStatus.REFUND_REQUESTED, SeatStatus.BOOKED, TicketStatus.CONFIRMED);
+        controller.confirmRefund(id);
+        assertEquals(BookingStatus.REFUNDED, transRepo.findById(id).getStatus());
+        assertEquals(SeatStatus.AVAILABLE, seatRepo.findById("MS1").getStatus());
+        assertEquals(TicketStatus.REFUNDED, ticketRepo.findById("T1").getStatus());
+        assertEquals(NotificationType.REFUND_CONFIRMED, notiRepo.findByUserId("FAN7").get(0).getType());
+    }
+
+    @Test
+    void confirmRefund_noRefundRequested_throws() {
+        String id = seedOnline(BookingStatus.CONFIRMED, SeatStatus.BOOKED, TicketStatus.CONFIRMED);
+        assertThrows(AppException.class, () -> controller.confirmRefund(id));
+        assertEquals(SeatStatus.BOOKED, seatRepo.findById("MS1").getStatus());
+    }
+
+    // ---------- reports / lists ----------
+    @Test
+    void getTicketBuyerList_onlyConfirmedTransactionsOfTheMatch() {
+        LocalDateTime now = LocalDateTime.now();
+        transRepo.save(new BookingTransaction("TA", "F1", "", MATCH, "", 1, 0, 1, now.minusHours(2), BookingStatus.CONFIRMED));
+        transRepo.save(new BookingTransaction("TB", "F2", "", MATCH, "", 1, 0, 1, now.minusHours(5), BookingStatus.CONFIRMED));
+        transRepo.save(new BookingTransaction("TC", "F3", "", MATCH, "", 1, 0, 1, now, BookingStatus.PENDING));
+        transRepo.save(new BookingTransaction("TD", "F4", "", "OTHER", "", 1, 0, 1, now, BookingStatus.CONFIRMED));
+        List<BookingTransaction> list = controller.getTicketBuyerList(MATCH);
+        assertEquals(2, list.size());
+        assertEquals("TB", list.get(0).getTransactionId());          // oldest first
+    }
+
+    @Test
+    void getShiftReport_ignoresOtherStaffAndOutOfRange() {
+        LocalDateTime now = LocalDateTime.now();
+        transRepo.save(new BookingTransaction("T1", "WALKIN", STAFF, MATCH, "", 300, 0, 300, now.minusMinutes(30), BookingStatus.CONFIRMED));
+        transRepo.save(new BookingTransaction("T2", "WALKIN", STAFF, MATCH, "", 200, 0, 200, now.minusMinutes(10), BookingStatus.CONFIRMED));
+        transRepo.save(new BookingTransaction("T3", "WALKIN", "U2", MATCH, "", 999, 0, 999, now.minusMinutes(10), BookingStatus.CONFIRMED));   // other staff
+        transRepo.save(new BookingTransaction("T4", "WALKIN", STAFF, MATCH, "", 999, 0, 999, now.minusDays(10), BookingStatus.CONFIRMED));     // out of range
+        transRepo.save(new BookingTransaction("T5", "WALKIN", STAFF, MATCH, "", 999, 0, 999, now.minusMinutes(5), BookingStatus.REFUNDED));    // not confirmed
+        Map<String, Double> r = controller.getShiftReport(STAFF, now.minusHours(1), now.plusHours(1));
+        assertEquals(2.0, r.get("transactions"), 0.001);
+        assertEquals(500.0, r.get("revenue"), 0.001);
+    }
+
+    // ---------- supportContact ----------
+    @Test
+    void supportContact_blankMessage_throws() {
+        assertThrows(AppException.class, () -> controller.supportContact("FAN7", "   "));
+        assertEquals(0, notiRepo.count());
+    }
+
+    @Test
+    void supportContact_validMessage_createsSupportNotification() {
+        controller.supportContact("FAN7", " Please bring your ID ");
+        Notification n = notiRepo.findByUserId("FAN7").get(0);
+        assertEquals(NotificationType.SUPPORT_MESSAGE, n.getType());
+        assertEquals("Please bring your ID", n.getMessage());
+    }
+}
