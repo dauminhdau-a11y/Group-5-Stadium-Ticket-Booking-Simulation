@@ -12,6 +12,8 @@ public class BookingTransaction extends SimpleEntity {
     private String staffId;
     private String matchId;
     private String voucherId;
+    private String buyerName;
+    private String buyerContact;
     private double originalAmount;
     private double discountAmount;
     private double finalAmount;
@@ -48,6 +50,10 @@ public class BookingTransaction extends SimpleEntity {
     public void setMatchId(String matchId) { this.matchId = matchId; }
     public String getVoucherId() { return voucherId; }
     public void setVoucherId(String voucherId) { this.voucherId = voucherId; }
+    public String getBuyerName() { return buyerName; }
+    public void setBuyerName(String buyerName) { this.buyerName = buyerName; }
+    public String getBuyerContact() { return buyerContact; }
+    public void setBuyerContact(String buyerContact) { this.buyerContact = buyerContact; }
     public double getOriginalAmount() { return originalAmount; }
     public void setOriginalAmount(double originalAmount) { this.originalAmount = originalAmount; }
     public double getDiscountAmount() { return discountAmount; }
@@ -62,7 +68,8 @@ public class BookingTransaction extends SimpleEntity {
     @Override public String toCsvLine() {
         return CsvParser.encode(transactionId, fanId, staffId, matchId, voucherId,
                 Double.toString(originalAmount), Double.toString(discountAmount), Double.toString(finalAmount),
-                bookingDate == null ? "" : bookingDate.toString(), status == null ? "" : status.name());
+            bookingDate == null ? "" : bookingDate.toString(), status == null ? "" : status.name(),
+            buyerName, buyerContact);
     }
 
     @Override public void fromCsvLine(String csvLine) {
@@ -78,5 +85,7 @@ public class BookingTransaction extends SimpleEntity {
         finalAmount = Double.parseDouble(values.get(7));
         bookingDate = LocalDateTime.parse(values.get(8));
         status = BookingStatus.valueOf(values.get(9));
+        buyerName = values.size() > 10 ? values.get(10) : "";
+        buyerContact = values.size() > 11 ? values.get(11) : "";
     }
 }

@@ -24,4 +24,14 @@ public class TicketRepository extends AbstractCsvRepository<Ticket> {
 		}
 		return result;
 	}
+
+	public List<Ticket> findByMatch(String matchId) {
+		List<Ticket> result = new ArrayList<Ticket>();
+		for (Ticket ticket : findAll()) {
+			if (matchId != null && matchId.equals(ticket.getMatchId())) {
+				result.add(ticket);
+			}
+		}
+		return result;
+	}
 }

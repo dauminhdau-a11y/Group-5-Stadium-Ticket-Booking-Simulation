@@ -45,6 +45,48 @@ public final class StaffAccountRepository {
         return null;
     }
 
+    public User findByEmail(String email) {
+        if (email == null || email.trim().isEmpty()) {
+            return null;
+        }
+        String normalized = email.trim().toLowerCase(Locale.ROOT);
+        for (User user : userRepository.findAll()) {
+            if (user.getEmail() != null && normalized.equals(user.getEmail().trim().toLowerCase(Locale.ROOT))) {
+                return user;
+            }
+        }
+        return null;
+    }
+
+    public User findByPhone(String phone) {
+        if (phone == null || phone.trim().isEmpty()) {
+            return null;
+        }
+        String cleanPhone = phone.trim().replaceAll("[^0-9]", "");
+        if (cleanPhone.isEmpty()) {
+            return null;
+        }
+        for (User user : userRepository.findAll()) {
+            String uPhone = user.getPhoneNumber() != null ? user.getPhoneNumber().trim().replaceAll("[^0-9]", "") : "";
+            if (cleanPhone.equals(uPhone)) {
+                return user;
+            }
+        }
+        return null;
+    }
+
+    public User findById(String userId) {
+        if (userId == null || userId.trim().isEmpty()) {
+            return null;
+        }
+        for (User user : userRepository.findAll()) {
+            if (userId.trim().equalsIgnoreCase(user.getUserId())) {
+                return user;
+            }
+        }
+        return null;
+    }
+
     public boolean hasRole(UserRole role) {
         return !findByRole(role).isEmpty();
     }

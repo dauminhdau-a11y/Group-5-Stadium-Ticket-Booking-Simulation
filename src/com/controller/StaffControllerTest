@@ -185,10 +185,12 @@ class StaffControllerTest {
         transRepo.save(new BookingTransaction("T2", "WALKIN", STAFF, MATCH, "", 200, 0, 200, now.minusMinutes(10), BookingStatus.CONFIRMED));
         transRepo.save(new BookingTransaction("T3", "WALKIN", "U2", MATCH, "", 999, 0, 999, now.minusMinutes(10), BookingStatus.CONFIRMED));   // other staff
         transRepo.save(new BookingTransaction("T4", "WALKIN", STAFF, MATCH, "", 999, 0, 999, now.minusDays(10), BookingStatus.CONFIRMED));     // out of range
-        transRepo.save(new BookingTransaction("T5", "WALKIN", STAFF, MATCH, "", 999, 0, 999, now.minusMinutes(5), BookingStatus.REFUNDED));    // not confirmed
-        Map<String, Double> r = controller.getShiftReport(STAFF, now.minusHours(1), now.plusHours(1));
-        assertEquals(2.0, r.get("transactions"), 0.001);
-        assertEquals(500.0, r.get("revenue"), 0.001);
+        transRepo.save(new BookingTransaction("T5", "WALKIN", STAFF, MATCH, "", 999, 0, 999, now.minusMinutes(5), BookingStatus.REFUNDED));    // refunded
+        ShiftReport r = controller.getShiftReport(STAFF, now.minusHours(1), now.plusHours(1));
+        assertEquals(3, r.getTotalTransactions());     // T1, T2, T5 (all in range for this staff)
+        assertEquals(2, r.getConfirmedTransactions()); // T1, T2
+        assertEquals(1, r.getRefundedTransactions());  // T5
+        assertEquals(500.0, r.getTotalConfirmedRevenue(), 0.001);
     }
 
     // ---------- supportContact ----------

@@ -11,6 +11,8 @@ public class MatchSeat extends SimpleEntity {
     private String matchId;
     private String seatId;
     private String sectionId;
+    private String blockId;
+    private int rowNumber;
     private String seatNumber;
     private double price;
     private SeatStatus status;
@@ -26,6 +28,20 @@ public class MatchSeat extends SimpleEntity {
         this.matchId = matchId;
         this.seatId = seatId;
         this.sectionId = sectionId;
+        this.blockId = sectionId + "-01";
+        this.seatNumber = seatNumber;
+        this.price = price;
+        this.status = SeatStatus.AVAILABLE;
+    }
+
+    public MatchSeat(String matchSeatId, String matchId, String seatId, String sectionId,
+                     String blockId, int rowNumber, String seatNumber, double price) {
+        this.matchSeatId = matchSeatId;
+        this.matchId = matchId;
+        this.seatId = seatId;
+        this.sectionId = sectionId;
+        this.blockId = blockId;
+        this.rowNumber = rowNumber;
         this.seatNumber = seatNumber;
         this.price = price;
         this.status = SeatStatus.AVAILABLE;
@@ -40,6 +56,10 @@ public class MatchSeat extends SimpleEntity {
     public void setSeatId(String seatId) { this.seatId = seatId; }
     public String getSectionId() { return sectionId; }
     public void setSectionId(String sectionId) { this.sectionId = sectionId; }
+    public String getBlockId() { return blockId; }
+    public void setBlockId(String blockId) { this.blockId = blockId; }
+    public int getRowNumber() { return rowNumber; }
+    public void setRowNumber(int rowNumber) { this.rowNumber = rowNumber; }
     public String getSeatNumber() { return seatNumber; }
     public void setSeatNumber(String seatNumber) { this.seatNumber = seatNumber; }
     public double getPrice() { return price; }
@@ -57,21 +77,37 @@ public class MatchSeat extends SimpleEntity {
     public void confirm() { this.status = SeatStatus.BOOKED; }
 
     @Override public String toCsvLine() {
-        return CsvParser.encode(matchSeatId, matchId, seatId, sectionId, seatNumber, Double.toString(price),
-                status == null ? "" : status.name(), lockedBy, lockedAt == null ? "" : lockedAt.toString());
+        return CsvParser.encode(matchSeatId, matchId, seatId, sectionId, blockId, Integer.toString(rowNumber),
+                seatNumber, Double.toString(price), status == null ? "" : status.name(), lockedBy,
+                lockedAt == null ? "" : lockedAt.toString());
     }
 
     @Override public void fromCsvLine(String csvLine) {
         List<String> values = CsvParser.parseLine(csvLine);
-        if (values.size() < 9) return;
-        matchSeatId = values.get(0);
-        matchId = values.get(1);
-        seatId = values.get(2);
-        sectionId = values.get(3);
-        seatNumber = values.get(4);
-        price = Double.parseDouble(values.get(5));
-        status = SeatStatus.valueOf(values.get(6));
-        lockedBy = values.get(7);
-        lockedAt = values.get(8).isEmpty() ? null : LocalDateTime.parse(values.get(8));
+        if (values.size() >= 11) {
+            matchSeatId = values.get(0);
+            matchId = values.get(1);
+            seatId = values.get(2);
+            sectionId = values.get(3);
+            blockId = values.get(4);
+            rowNumber = Integer.parseInt(values.get(5));
+            seatNumber = values.get(6);
+            price = Double.parseDouble(values.get(7));
+            status = SeatStatus.valueOf(values.get(8));
+            lockedBy = values.get(9);
+            lockedAt = values.get(10).isEmpty() ? null : LocalDateTime.parse(values.get(10));
+        } else if (values.size() >= 9) {
+            matchSeatId = values.get(0);
+            matchId = values.get(1);
+            seatId = values.get(2);
+            sectionId = values.get(3);
+            blockId = sectionId + "-01";
+            rowNumber = 0;
+            seatNumber = values.get(4);
+            price = Double.parseDouble(values.get(5));
+            status = SeatStatus.valueOf(values.get(6));
+            lockedBy = values.get(7);
+            lockedAt = values.get(8).isEmpty() ? null : LocalDateTime.parse(values.get(8));
+        }
     }
 }

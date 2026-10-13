@@ -17,8 +17,10 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -84,6 +86,48 @@ public abstract class AbstractCsvRepository<T extends BaseEntity> implements Csv
             }
             entities.add(entity);
             return true;
+        });
+    }
+
+    public int saveAll(List<T> newEntities) {
+        if (newEntities == null || newEntities.isEmpty()) {
+            return 0;
+        }
+        return withStore(true, entities -> {
+            Set<String> existingIds = new HashSet<String>();
+            for (T entity : entities) {
+                existingIds.add(entity.getId());
+            }
+            int saved = 0;
+            for (T entity : newEntities) {
+                if (entity != null && entity.getId() != null && existingIds.add(entity.getId())) {
+                    entities.add(entity);
+                    saved++;
+                }
+            }
+            return saved;
+        });
+    }
+
+    public int updateAll(List<T> updates) {
+        if (updates == null || updates.isEmpty()) {
+            return 0;
+        }
+        return withStore(true, entities -> {
+            int updated = 0;
+            for (T replacement : updates) {
+                if (replacement == null || replacement.getId() == null) {
+                    continue;
+                }
+                for (int i = 0; i < entities.size(); i++) {
+                    if (replacement.getId().equals(entities.get(i).getId())) {
+                        entities.set(i, replacement);
+                        updated++;
+                        break;
+                    }
+                }
+            }
+            return updated;
         });
     }
 
