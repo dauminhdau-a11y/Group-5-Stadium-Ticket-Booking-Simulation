@@ -68,12 +68,12 @@ public class Account extends BaseEntity{
     }
     @Override 
     public String toCsvLine(){
-        return getId()+","+accountId+","+username+","+passwordHash+","+ getFullName() +","+ email +","+ role +","+locked;
+        return getId()+","+accountId+","+username+","+passwordHash+","+email+","+role+","+locked;
     }
     @Override 
     public Account fromCsvLine(String line ){
         String[] values = line.split(",",-1);
-        if (values.length != 8){
+        if (values.length != 7){
             throw new IllegalArgumentException("Invalid Account CSV data");
         }
         return new Account(values[0], values[1], values[2], values[3], values[4], Role.valueOf(values[5]), Boolean.parseBoolean(values[6]));

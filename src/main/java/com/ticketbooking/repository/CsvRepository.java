@@ -19,13 +19,17 @@ public abstract class CsvRepository<T extends BaseEntity>{
 
     public abstract T parseLine(String line);
 
-    public List<T> findAll(){
+    protected boolean isHeaderLine(String line){
+        return false;
+    }
+
+    public List<T> findAll() throws IOException{
         List<T> entities = new ArrayList<>();
         if (!Files.exists(filePath)){
             return entities;
         }
         for (String line : Files.readAllLines(filePath, StandardCharsets.UTF_8)){
-            if (!line.trim().isEmpty()){
+            if (!line.trim().isEmpty() && !isHeaderLine(line)){
                 entities.add(parseLine(line));
             }
         }
