@@ -1,69 +1,128 @@
+
 package com.stadium.model;
 
-public class SimulationResult {
+import com.stadium.model.interfaces.BaseEntity;
+import java.util.UUID;
 
-    private final int totalUsers;
-    private final int totalAttempts;
-    private final int successfulBookings;
-    private final int failedBookings;
-    private final int totalSeats;
-    private final long executionTime;
+public class SimulationResult implements BaseEntity {
 
+    private String resultId;
+    private SyncMechanism mechanism;
+    private int threadCount;
+    private long durationMs;
+    private int successCount;
+    private int failCount;
+    private int doubleBookingCount;
+
+    // Constructor không tham số
+    public SimulationResult() {
+        this.resultId = UUID.randomUUID().toString();
+    }
+
+    // Constructor đầy đủ thông tin kết quả
     public SimulationResult(
-            int totalUsers,
-            int totalAttempts,
-            int successfulBookings,
-            int failedBookings,
-            int totalSeats,
-            long executionTime) {
+            SyncMechanism mechanism,
+            int threadCount,
+            long durationMs,
+            int successCount,
+            int failCount,
+            int doubleBookingCount) {
 
-        this.totalUsers = totalUsers;
-        this.totalAttempts = totalAttempts;
-        this.successfulBookings = successfulBookings;
-        this.failedBookings = failedBookings;
-        this.totalSeats = totalSeats;
-        this.executionTime = executionTime;
+        this();
+
+        this.mechanism = mechanism;
+        this.threadCount = threadCount;
+        this.durationMs = durationMs;
+        this.successCount = successCount;
+        this.failCount = failCount;
+        this.doubleBookingCount = doubleBookingCount;
     }
 
-    public int getTotalUsers() {
-        return totalUsers;
+    public String getResultId() {
+        return resultId;
     }
 
-    public int getTotalAttempts() {
-        return totalAttempts;
+    public SyncMechanism getMechanism() {
+        return mechanism;
     }
 
-    public int getSuccessfulBookings() {
-        return successfulBookings;
+    public int getThreadCount() {
+        return threadCount;
     }
 
-    public int getFailedBookings() {
-        return failedBookings;
+    public int getTotalThreads() {
+        return threadCount;
     }
 
-    public int getTotalSeats() {
-        return totalSeats;
+    public long getDurationMs() {
+        return durationMs;
     }
 
-    public long getExecutionTime() {
-        return executionTime;
+    public int getSuccessCount() {
+        return successCount;
     }
 
-    public double getSuccessRate() {
+    public int getFailCount() {
+        return failCount;
+    }
 
-        if (totalAttempts == 0) {
-            return 0;
+    public int getDoubleBookingCount() {
+        return doubleBookingCount;
+    }
+
+    // Số lượt đặt thành công trung bình mỗi giây
+    public double getTps() {
+        if (durationMs <= 0) {
+            return 0.0;
         }
 
-        return successfulBookings * 100.0 / totalAttempts;
+        return successCount * 1000.0 / durationMs;
     }
 
-    public double getFailureRate() {
+    public double getThroughputPs() {
+        return getTps();
+    }
 
-        if (totalAttempts == 0) {
-            return 0;
+    // Tỷ lệ thử đặt trùng trên tổng số người dùng
+    public double getDoubleBookingRate() {
+        if (threadCount <= 0) {
+            return 0.0;
         }
 
-        return failedBookings * 100.0 / totalAttempts;
+        return doubleBookingCount * 100.0 / threadCount;
+    }
+
+    @Override
+    public String getId() {
+        return resultId;
+    }
+
+    @Override
+    public String toCsvLine() {
+        return resultId + ","
+                + mechanism + ","
+                + threadCount + ","
+                + durationMs + ","
+                + successCount + ","
+                + failCount + ","
+                + doubleBookingCount;
+    }
+
+    @Override
+    public void fromCsvLine(String line) {
+        String[] values = line.split(",", -1);
+
+        if (values.length != 7) {
+            throw new IllegalArgumentException(
+                    "Invalid SimulationResult CSV row");
+        }
+
+        resultId = values[0];
+        mechanism = SyncMechanism.valueOf(values[1]);
+        threadCount = Integer.parseInt(values[2]);
+        durationMs = Long.parseLong(values[3]);
+        successCount = Integer.parseInt(values[4]);
+        failCount = Integer.parseInt(values[5]);
+        doubleBookingCount = Integer.parseInt(values[6]);
     }
 }

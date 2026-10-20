@@ -1,7 +1,9 @@
+
 package com.stadium.view;
 
 import com.stadium.controller.SimulatorController;
 import com.stadium.model.SimulationResult;
+import com.stadium.model.SyncMechanism;
 
 import java.util.Scanner;
 
@@ -11,91 +13,132 @@ public class SimulatorView {
     private final SimulatorController controller;
 
     public SimulatorView() {
+        this(new Scanner(System.in),
+                new SimulatorController());
+    }
 
-        scanner = new Scanner(System.in);
-        controller = new SimulatorController();
+    public SimulatorView(
+            Scanner scanner,
+            SimulatorController controller) {
+
+        this.scanner = scanner;
+        this.controller = controller;
     }
 
     public void showSimulator() {
+        System.out.println(
+                "\n=== STADIUM BOOKING SIMULATOR ===");
 
-        System.out.println();
-        System.out.println("========================================");
-        System.out.println("       STADIUM BOOKING SIMULATOR");
-        System.out.println("========================================");
+        int users = readPositiveInt(
+                "Number of concurrent users: ");
 
-        System.out.print("Enter number of users: ");
-        int users = scanner.nextInt();
+        System.out.println(
+                "Synchronization mechanisms:");
 
-        System.out.print("Enter number of seats: ");
-        int seats = scanner.nextInt();
+        SyncMechanism[] mechanisms =
+                SyncMechanism.values();
 
-        try {
+        for (int i = 0; i < mechanisms.length; i++) {
+            System.out.printf(
+                    "%d. %s%n", i + 1, mechanisms[i]);
+        }
 
-            SimulationResult result =
-                    controller.runSimulation(
-                            users,
-                            seats
-                    );
+        int choice = readRange(
+                "Choose mechanism: ",
+                1,
+                mechanisms.length);
 
-            displayResult(result);
+        SimulationResult result =
+                controller.runSimulation(
+                        users, mechanisms[choice - 1]);
 
-        } catch (IllegalArgumentException e) {
+        printSimulationResult(result);
 
-            System.out.println(
-                    "Error: " + e.getMessage()
-            );
+        System.out.print(
+                "Run another simulation? (y/n): ");
+
+        String answer = scanner.nextLine().trim();
+
+        if (answer.equalsIgnoreCase("y")) {
+            showSimulator();
+        } else {
+            System.out.println("Simulation ended.");
         }
     }
 
-    private void displayResult(
+    private int readPositiveInt(String prompt) {
+        return readRange(prompt, 1, 10000);
+    }
+
+    private int readRange(
+            String prompt, int min, int max) {
+
+        while (true) {
+            System.out.print(prompt);
+
+            String line = scanner.nextLine().trim();
+
+            try {
+                int value = Integer.parseInt(line);
+
+                if (value >= min && value <= max) {
+                    return value;
+                }
+            } catch (NumberFormatException ignored) {
+                // Yêu cầu người dùng nhập lại
+            }
+
+            System.out.printf(
+                    "Enter an integer from %d to %d.%n",
+                    min, max);
+        }
+    }
+
+    public void printSimulationResult(
             SimulationResult result) {
 
-        System.out.println();
-        System.out.println("========================================");
-        System.out.println("          SIMULATION RESULT");
-        System.out.println("========================================");
+        System.out.println(
+                "\n========== SIMULATION RESULT ==========");
 
         System.out.println(
-                "Total users       : "
-                + result.getTotalUsers()
-        );
+                "Mechanism            : "
+                + result.getMechanism());
 
         System.out.println(
-                "Total attempts    : "
-                + result.getTotalAttempts()
-        );
+                "Concurrent users     : "
+                + result.getTotalThreads());
 
         System.out.println(
-                "Total seats       : "
-                + result.getTotalSeats()
-        );
+                "Successful bookings  : "
+                + result.getSuccessCount());
 
         System.out.println(
-                "Successful        : "
-                + result.getSuccessfulBookings()
-        );
+                "Failed attempts      : "
+                + result.getFailCount());
 
         System.out.println(
-                "Failed            : "
-                + result.getFailedBookings()
-        );
+                "Duplicate attempts   : "
+                + result.getDoubleBookingCount());
 
         System.out.printf(
-                "Success rate      : %.2f%%%n",
-                result.getSuccessRate()
-        );
-
-        System.out.printf(
-                "Failure rate      : %.2f%%%n",
-                result.getFailureRate()
-        );
+                "Duplicate rate       : %.2f%%%n",
+                result.getDoubleBookingRate());
 
         System.out.println(
-                "Execution time    : "
-                + result.getExecutionTime()
-                + " ms"
-        );
+                "Duration             : "
+                + result.getDurationMs() + " ms");
 
-        System.out.println("========================================");
+        System.out.printf(
+                "Throughput           : %.2f bookings/sec%n",
+                result.getThroughputPs());
+
+        System.out.println(
+                "=======================================");
+    }
+
+    public void drawComparisonChart() {
+        System.out.println(
+                "Comparison chart requires results "
+                + "from multiple simulation runs.");
     }
 }

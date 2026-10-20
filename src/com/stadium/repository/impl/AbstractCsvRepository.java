@@ -9,7 +9,10 @@ import java.util.Optional;
 public abstract class AbstractCsvRepository<T extends BaseEntity> implements CsvRepository<T> {
     private final List<T> entities = new ArrayList<>();
 
-    @Override public List<T> findAll() { return List.copyOf(entities); }
+    @Override
+    public List<T> findAll() {
+    return new ArrayList<>(entities);
+}
     @Override public Optional<T> findById(String id) {
         return entities.stream().filter(entity -> entity.getId().equals(id)).findFirst();
     }
