@@ -112,7 +112,7 @@ public class StaffView {
 
     public void showSellOfflineForm() {
         System.out
-                .println("Ticket prices: Khu VIP 500.000 | Khu gần 350.000 | Hai cánh 250.000 | Khu ngoài xa 150.000");
+                .println("Ticket prices: VIP Area 500.000 | Nearby Area 350.000 | Two wings 250.000 | The Outlying Area 150.000");
         String matchId = chooseMatchId();
         if (matchId == null) {
             return;
@@ -328,14 +328,14 @@ public class StaffView {
                 List<MatchSeat> seats = staffController.getSeatMap(matchId);
                 seatMapView.renderDashboard(match, seats);
 
-                System.out.println("\n=== THAO TÁC SƠ ĐỒ GHẾ THỜI GIAN THỰC ===");
-                System.out.println("1. Xem toàn bộ sân (Màu sắc trực quan theo hàng)");
-                System.out.println("2. Xem chi tiết theo từng Khán đài (Stand Filter)");
-                System.out.println("3. Tra cứu chi tiết 1 ghế (Seat Inspection)");
-                System.out.println("4. Bật chế độ Live Monitor (Tự động refresh mỗi 3s)");
-                System.out.println("R. Refresh cập nhật dữ liệu mới nhất ngay lập tức");
-                System.out.println("0. Quay lại Menu chính");
-                System.out.print("Chọn thao tác: ");
+                System.out.println("\n=== SEAT MAP DASHBOARD ===");
+                System.out.println("1. View whole stadium (Color-coded by row)");
+                System.out.println("2. View by Stand (Stand Filter)");
+                System.out.println("3. Search seat details (Seat Inspection)");
+                System.out.println("4. Live Monitor Mode (Auto-refresh every 3s)");
+                System.out.println("R. Refresh latest data immediately");
+                System.out.println("0. Back to main menu");
+                System.out.print("Select action: ");
 
                 String input = readLine().trim();
                 if ("0".equals(input)) {
@@ -350,9 +350,9 @@ public class StaffView {
                 } else if ("4".equals(input)) {
                     showLiveMonitor(matchId, match);
                 } else if ("r".equalsIgnoreCase(input)) {
-                    System.out.println("\n[INFO] Đang tải lại dữ liệu mới nhất từ hệ thống...");
+                    System.out.println("\n[INFO] Loading latest data from system...");
                 } else {
-                    System.out.println("Lựa chọn không hợp lệ.");
+                    System.out.println("Invalid option.");
                 }
             } catch (Exception exception) {
                 System.out.println("[ERROR] " + exception.getMessage());
@@ -362,19 +362,19 @@ public class StaffView {
     }
 
     private void showStandFilterView(List<MatchSeat> seats) {
-        System.out.println("\n--- DANH SÁCH CÁC KHÁN ĐÀI (STAND FILTER) ---");
+        System.out.println("\n--- STAND FILTER (STAND FILTER) ---");
         SeatZone[] zones = SeatZone.values();
         for (int i = 0; i < zones.length; i++) {
             System.out.printf("%d. %s (%s)%n", i + 1, zones[i].getDisplayName(), zones[i].getSectionId());
         }
-        System.out.println("0. Quay lại");
-        System.out.print("Chọn khán đài muốn xem chi tiết: ");
+        System.out.println("0. Back to main menu");
+        System.out.print("Select Stand you want to view: ");
         int choice = readInt();
         if (choice == 0) {
             return;
         }
         if (choice < 1 || choice > zones.length) {
-            System.out.println("Lựa chọn không hợp lệ.");
+            System.out.println("Invalid option.");
             return;
         }
         SeatZone selectedZone = zones[choice - 1];
@@ -383,7 +383,7 @@ public class StaffView {
     }
 
     private void showSeatInspectionView(String matchId) {
-        System.out.print("\nNhập mã ghế cần tra cứu (Seat ID, MatchSeat ID, hoặc số ghế ví dụ: S-1, S01, MS-1): ");
+        System.out.print("\nEnter seat ID, MatchSeat ID, or seat number (e.g., S-1, S01, MS-1): ");
         String query = readLine().trim();
         if (query.isEmpty() || "0".equals(query)) {
             return;
@@ -391,7 +391,7 @@ public class StaffView {
         try {
             SeatInspectionDetails details = staffController.inspectSeat(matchId, query);
             if (details == null) {
-                System.out.println("\n[WARN] Không tìm thấy ghế nào phù hợp với từ khóa: '" + query + "'");
+                System.out.println("\n[WARN] No seat found matching the keyword: '" + query + "'");
             } else {
                 seatMapView.renderSeatInspection(details);
             }
@@ -403,17 +403,17 @@ public class StaffView {
 
     private void showLiveMonitor(String matchId, Match match) {
         System.out.println("\n=======================================================");
-        System.out.println("   BẬT CHẾ ĐỘ LIVE MONITOR (TỰ ĐỘNG LÀM MỚI MỖI 3 GIÂY) ");
+        System.out.println("   LIVE MONITOR MODE (AUTO-REFRESH EVERY 3 SECONDS) ");
         System.out.println("=======================================================");
-        System.out.println("Hệ thống sẽ liên tục cập nhật trạng thái ghế và dọn dẹp giữ chỗ quá hạn.");
-        System.out.println("Nhấn Enter để dừng Live Monitor và quay lại menu.\n");
+        System.out.println("The system will continuously update seat status and clear expired bookings.");
+        System.out.println("Press Enter to stop Live Monitor and return to the menu.\n");
 
         int maxCycles = 60;
         for (int cycle = 1; cycle <= maxCycles; cycle++) {
             try {
                 List<MatchSeat> seats = staffController.getSeatMap(matchId);
                 seatMapView.renderDashboard(match, seats);
-                System.out.printf(">> [Chu kỳ %d/%d] Đang giám sát... (Nhấn Enter bất cứ lúc nào để dừng): %n", cycle, maxCycles);
+                System.out.printf(">> [Cycle %d/%d] Monitoring... (Press Enter to stop): %n", cycle, maxCycles);
 
                 boolean stop = false;
                 for (int i = 0; i < 15; i++) {
@@ -425,7 +425,7 @@ public class StaffView {
                 }
                 if (stop) {
                     readLine();
-                    System.out.println("\n[INFO] Đã dừng chế độ Live Monitor.");
+                    System.out.println("\n[INFO] Live Monitor stopped.");
                     break;
                 }
             } catch (InterruptedException e) {
@@ -439,7 +439,7 @@ public class StaffView {
     }
 
     private void pressEnterToContinue() {
-        System.out.print("\nNhấn Enter để tiếp tục...");
+        System.out.print("\nPress Enter to continue...");
         readLine();
     }
 
@@ -644,16 +644,16 @@ public class StaffView {
     }
 
     public void showCreateFanForm() {
-        System.out.println("\n=== ĐĂNG KÝ THÀNH VIÊN CỔ ĐỘNG VIÊN (FAN) TẠI QUẦY ===");
-        System.out.print("Họ và tên khách hàng (Full name): ");
+        System.out.println("\n=== CREATE FAN ACCOUNT (WALK-IN) ===");
+        System.out.print("Full name: ");
         String fullName = readLine();
-        System.out.print("Số điện thoại (Phone number - 10 số): ");
+        System.out.print("Phone number (10 digits): ");
         String phone = readLine();
-        System.out.print("Email (để nhận vé điện tử, có thể bỏ trống): ");
+        System.out.print("Email (to receive e-tickets, optional): ");
         String email = readLine();
-        System.out.print("Tên đăng nhập (Username - để trống để tự sinh theo SĐT): ");
+        System.out.print("Username (leave blank to auto-generate from phone number): ");
         String username = readLine();
-        System.out.print("Mật khẩu ban đầu (để trống để tự sinh mật khẩu tạm thời an toàn): ");
+        System.out.print("Initial password (leave blank to auto-generate a secure temporary password): ");
         String password = readLine();
 
         try {
@@ -662,18 +662,18 @@ public class StaffView {
             User user = result.getUser();
 
             System.out.println("\n============================================================");
-            System.out.println("            THẺ ĐĂNG KÝ CỔ ĐỘNG VIÊN (FAN) THÀNH CÔNG       ");
+            System.out.println("            FAN REGISTRATION (WALK-IN) SUCCESSFUL       ");
             System.out.println("============================================================");
-            System.out.printf("  Mã CĐV (Fan ID)         : %s%n", user.getUserId());
-            System.out.printf("  Họ và tên               : %s%n", user.getFullName());
-            System.out.printf("  Số điện thoại           : %s%n", user.getPhoneNumber());
-            System.out.printf("  Email                   : %s%n", user.getEmail().isEmpty() ? "(Chưa cập nhật)" : user.getEmail());
-            System.out.printf("  Tên đăng nhập           : %s%n", user.getUsername());
-            System.out.printf("  Mật khẩu khởi tạo       : %s%n", result.getRawPassword());
-            System.out.printf("  Điểm tích lũy chào mừng : %d điểm%n", result.getInitialPoints());
+            System.out.printf("  Fan ID                  : %s%n", user.getUserId());
+            System.out.printf("  Full name               : %s%n", user.getFullName());
+            System.out.printf("  Phone number            : %s%n", user.getPhoneNumber());
+            System.out.printf("  Email                   : %s%n", user.getEmail().isEmpty() ? "(Not updated)" : user.getEmail());
+            System.out.printf("  Username                : %s%n", user.getUsername());
+            System.out.printf("  Initial password        : %s%n", result.getRawPassword());
+            System.out.printf("  Welcome bonus points    : %d points%n", result.getInitialPoints());
             System.out.println("------------------------------------------------------------");
-            System.out.println("  * Quý khách vui lòng đổi mật khẩu trong lần đăng nhập đầu tiên.");
-            System.out.println("  * Có thể đọc Mã CĐV hoặc SĐT để tích điểm khi mua vé tại quầy.");
+            System.out.println("  * Please change password on first login.");
+            System.out.println("  * You can use Fan ID or Phone Number to earn points when purchasing tickets at the counter.");
             System.out.println("============================================================\n");
         } catch (Exception e) {
             System.out.println("[ERROR] " + e.getMessage());

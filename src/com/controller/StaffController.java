@@ -227,11 +227,11 @@ public class StaffController {
 
         if (supportRequestRepository != null && supportRequestRepository.findAll().isEmpty()) {
             List<SupportRequest> sampleRequests = new ArrayList<SupportRequest>();
-            sampleRequests.add(new SupportRequest("SR-1001", fan.getUserId(), "", "Hỗ trợ đổi chỗ ngồi khán đài",
-                    "Tôi đi cùng người thân muốn đổi sang 2 ghế liền kề nhau tại khán đài A.", "",
+            sampleRequests.add(new SupportRequest("SR-1001", fan.getUserId(), "", "Support  change seats in the stands",
+                    "I went with a relative and want to change to 2 seats next to each other in the stands.", "",
                     SupportRequestStatus.OPEN, LocalDateTime.now().minusHours(3), null));
-            sampleRequests.add(new SupportRequest("SR-1002", fan.getUserId(), "", "Thắc mắc hóa đơn thanh toán",
-                    "Tôi đã thanh toán qua chuyển khoản nhưng chưa nhận được mã QR vào email.", "",
+            sampleRequests.add(new SupportRequest("SR-1002", fan.getUserId(), "", "Question about payment invoice",
+                    "I have paid by bank transfer but have not received a QR code in my email.", "",
                     SupportRequestStatus.OPEN, LocalDateTime.now().minusHours(1), null));
             supportRequestRepository.saveAll(sampleRequests);
         }
@@ -1181,21 +1181,21 @@ public class StaffController {
 
         // 1. Validate Full Name
         if (fullName == null || fullName.trim().isEmpty() || fullName.trim().length() > 100) {
-            throw new IllegalArgumentException("Họ và tên khách hàng là bắt buộc (tối đa 100 ký tự).");
+            throw new IllegalArgumentException("Full name is required (maximum 100 characters).");
         }
         String cleanName = fullName.trim();
 
         // 2. Validate Phone Number
         if (phoneNumber == null || phoneNumber.trim().isEmpty()) {
-            throw new IllegalArgumentException("Số điện thoại là bắt buộc để định danh Cổ động viên.");
+            throw new IllegalArgumentException("Phone number is required to identify the fan.");
         }
         String cleanPhone = phoneNumber.trim().replaceAll("[^0-9]", "");
         if (!cleanPhone.matches("^0[0-9]{9}$")) {
             throw new IllegalArgumentException(
-                    "Số điện thoại không hợp lệ (yêu cầu 10 chữ số, bắt đầu bằng số 0, ví dụ: 0912345678).");
+                    "Invalid phone number (requires 10 digits, starting with 0, e.g., 0912345678).");
         }
         if (accountRepository.findByPhone(cleanPhone) != null) {
-            throw new IllegalArgumentException("Số điện thoại này đã được đăng ký cho tài khoản khác: " + cleanPhone);
+            throw new IllegalArgumentException("Phone number has been registered for another account: " + cleanPhone);
         }
 
         // 3. Validate Email
@@ -1203,10 +1203,10 @@ public class StaffController {
         if (email != null && !email.trim().isEmpty()) {
             cleanEmail = email.trim();
             if (!cleanEmail.matches("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$")) {
-                throw new IllegalArgumentException("Định dạng email không hợp lệ: " + cleanEmail);
+                throw new IllegalArgumentException("Invalid email format: " + cleanEmail);
             }
             if (accountRepository.findByEmail(cleanEmail) != null) {
-                throw new IllegalArgumentException("Email này đã được sử dụng cho tài khoản khác: " + cleanEmail);
+                throw new IllegalArgumentException("Email has been used for another account: " + cleanEmail);
             }
         }
 
@@ -1217,11 +1217,11 @@ public class StaffController {
         } else {
             finalUsername = customUsername.trim();
             if (!finalUsername.matches("[A-Za-z0-9._-]{3,32}")) {
-                throw new IllegalArgumentException("Username phải từ 3-32 ký tự hợp lệ (chữ, số, ., _, -).");
+                throw new IllegalArgumentException("Username must be between 3-32 valid characters (letters, numbers, ., _, -).");
             }
         }
         if (accountRepository.findByUsername(finalUsername) != null) {
-            throw new IllegalArgumentException("Tên đăng nhập đã tồn tại: " + finalUsername);
+            throw new IllegalArgumentException("Username already exists: " + finalUsername);
         }
 
         // 5. Handle Password
@@ -1232,7 +1232,7 @@ public class StaffController {
         } else {
             finalPassword = customPassword.trim();
             if (finalPassword.length() < 8) {
-                throw new IllegalArgumentException("Mật khẩu phải có ít nhất 8 ký tự.");
+                throw new IllegalArgumentException("Password must be at least 8 characters long.");
             }
         }
 
@@ -1249,12 +1249,12 @@ public class StaffController {
         User user = new User(fanId, finalUsername, PasswordHasher.hash(finalPassword),
                 cleanEmail, UserRole.FAN.name(), cleanName, cleanPhone, welcomePoints);
         if (!accountRepository.save(user)) {
-            throw new IllegalStateException("Không thể lưu tài khoản CĐV vào hệ thống.");
+            throw new IllegalStateException("Failed to save fan account to system.");
         }
 
         // 9. Send Welcome notification
         String welcomeMsg = String.format(
-                "Chào mừng %s gia nhập Hội Cổ động viên! Bạn được tặng %d điểm tích lũy khởi đầu. Mã CĐV: %s.",
+                "Welcome %s to the Fan Club! You have been awarded %d initial loyalty points. Fan ID: %s.",
                 cleanName, welcomePoints, fanId);
         notificationRepository.save(new Notification("N-" + UUID.randomUUID().toString(), fanId,
                 NotificationType.REMINDER, welcomeMsg, LocalDateTime.now(), false));
