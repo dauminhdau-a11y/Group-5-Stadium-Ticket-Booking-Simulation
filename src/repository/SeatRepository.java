@@ -1,7 +1,6 @@
 package repository;
 
 import model.Seat;
-import model.SeatStatus;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -29,36 +28,46 @@ public class SeatRepository implements CsvRepository<Seat> {
             String line;
             while ((line = reader.readLine()) != null) {
                 if (line.trim().isEmpty()) continue;
-                String[] fields = line.split(",", -1);
-                if (fields.length < 2 || fields.length > 3) continue;
-                Seat seat = new Seat(fields[0].trim(), fields[1].trim());
-                seat.setStatus(fields.length == 3 && !fields[2].trim().isEmpty()
-                        ? SeatStatus.valueOf(fields[2].trim()) : SeatStatus.AVAILABLE);
-                seats.add(seat);
+                Seat seat = new Seat();
+                seat.fromCsvLine(line);
+                if (seat.getSeatId() != null) {
+                    seats.add(seat);
+                }
             }
         } catch (IOException e) {
-            throw new IllegalStateException("Không đọc được file ghế: " + e.getMessage(), e);
+            throw new IllegalStateException("Unable to read seats file: " + e.getMessage(), e);
         }
         return seats;
     }
 
     @Override
     public Seat findById(String id) {
-        return findAll().stream().filter(seat -> seat.getSeatId().equals(id)).findFirst().orElse(null);
+        if (id == null) return null;
+        return findAll().stream().filter(seat -> seat.getSeatId().equalsIgnoreCase(id.trim())).findFirst().orElse(null);
     }
 
     @Override
     public void save(Seat seat) {
         List<Seat> seats = findAll();
-        seats.removeIf(existing -> existing.getSeatId().equals(seat.getSeatId()));
-        seats.add(seat);
+        int existingIndex = -1;
+        for (int i = 0; i < seats.size(); i++) {
+            if (seats.get(i).getSeatId().equalsIgnoreCase(seat.getSeatId())) {
+                existingIndex = i;
+                break;
+            }
+        }
+        if (existingIndex >= 0) {
+            seats.set(existingIndex, seat);
+        } else {
+            seats.add(seat);
+        }
         writeAll(seats);
     }
 
     @Override
     public void delete(String id) {
         List<Seat> seats = findAll();
-        seats.removeIf(seat -> seat.getSeatId().equals(id));
+        seats.removeIf(seat -> seat.getSeatId().equalsIgnoreCase(id));
         writeAll(seats);
     }
 
@@ -69,16 +78,18 @@ public class SeatRepository implements CsvRepository<Seat> {
 
     private void writeAll(List<Seat> seats) {
         try {
-            Files.createDirectories(FILE_PATH.getParent());
+            if (!Files.exists(FILE_PATH.getParent())) {
+                Files.createDirectories(FILE_PATH.getParent());
+            }
             try (BufferedWriter writer = Files.newBufferedWriter(FILE_PATH,
                     StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
                 for (Seat seat : seats) {
-                    writer.write(seat.getSeatId() + "," + seat.getMatchId() + "," + seat.getStatus().name());
+                    writer.write(seat.toCsvLine());
                     writer.newLine();
                 }
             }
         } catch (IOException e) {
-            throw new IllegalStateException("Không ghi được file ghế: " + e.getMessage(), e);
+            throw new IllegalStateException("Unable to write seats file: " + e.getMessage(), e);
         }
     }
 }

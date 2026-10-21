@@ -7,48 +7,58 @@ public class MainView {
     private BookingView bookingView;
 
     public MainView(BookingView bookingView) {
-        this.scanner = new Scanner(System.in);
+        this(bookingView, new Scanner(System.in));
+    }
+
+    public MainView(BookingView bookingView, Scanner scanner) {
+        this.scanner = scanner;
         this.bookingView = bookingView;
     }
 
     public void displayMenu() {
         while (true) {
-            System.out.println("=====================================");
-            System.out.println("    STADIUM TICKET BOOKING SYSTEM    ");
-            System.out.println("=====================================");
-            System.out.println("1. View available seats");
-            System.out.println("2. Book tickets online");
-            System.out.println("3. Run simulation tool");
-            System.out.println("0. Exit program");
-            System.out.print("Select an option (0-3): ");
+            System.out.println("==========================================================================");
+            System.out.println("              STADIUM TICKET BOOKING SYSTEM - SIMULATION                  ");
+            System.out.println("==========================================================================");
+            System.out.println("1. View Match Schedule & Filter (Date, Stadium, Team, Sold Out)");
+            System.out.println("2. View Stands, Pricing Table & Visual Seat Map");
+            System.out.println("3. Book Tickets Online (With Voucher & QR Code Payment)");
+            System.out.println("4. Run Simulation Tool");
+            System.out.println("0. Exit Program");
+            System.out.print("Select an option (0-4): ");
 
             int choice = getUserChoice();
 
             switch (choice) {
                 case 1:
-                    bookingView.showAvailableSeats();
+                    bookingView.showMatchListAndFilter();
                     break;
                 case 2:
-                    bookingView.showBookingForm();
+                    bookingView.showStandPriceAndSeatMap();
                     break;
                 case 3:
-                    System.out.println("Feature under development...");
+                    bookingView.showBookingForm();
+                    break;
+                case 4:
+                    System.out.println("\n[NOTICE]: Simulation tool is under development...\n");
                     break;
                 case 0:
-                    System.out.println("Thank you for using the system. Goodbye!");
+                    System.out.println("\nThank you for using the Stadium Ticket Booking System. Goodbye!");
                     System.exit(0);
                 default:
-                    System.out.println("Invalid choice. Please try again.");
+                    System.out.println("\nInvalid choice. Please try again.\n");
             }
         }
     }
 
     public int getUserChoice() {
         try {
+            if (!scanner.hasNextLine()) {
+                return 0;
+            }
             return Integer.parseInt(scanner.nextLine().trim());
         } catch (NumberFormatException e) {
             return -1;
         }
     }
-
 }
