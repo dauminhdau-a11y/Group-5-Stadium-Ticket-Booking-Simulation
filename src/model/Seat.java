@@ -1,36 +1,18 @@
 package model;
 
-public class Seat {
+public class Seat extends BaseEntity {
     private String seatId;
     private SeatStatus status;
     private String matchId;
-    private long version;
-
-    public Seat() {
-        this.status = SeatStatus.AVAILABLE;
-        this.version = 0L;
-    }
+    private int version;
 
     public Seat(String seatId, String matchId) {
         this.seatId = seatId;
         this.matchId = matchId;
-        this.status = SeatStatus.AVAILABLE;
-        this.version = 0L;
-    }
-
-    public Seat(String seatId, String matchId, SeatStatus status, long version) {
-        this.seatId = seatId;
-        this.matchId = matchId;
-        this.status = status;
-        this.version = version;
     }
 
     public String getSeatId() {
         return seatId;
-    }
-
-    public void setSeatId(String seatId) {
-        this.seatId = seatId;
     }
 
     public SeatStatus getStatus() {
@@ -45,15 +27,28 @@ public class Seat {
         return matchId;
     }
 
-    public void setMatchId(String matchId) {
-        this.matchId = matchId;
+    @Override
+    public String toCsvLine() {
+        return seatId + "," + matchId + "," + status.name() + "," + version;
     }
 
-    public long getVersion() {
-        return version;
-    }
+    @Override
+    public void fromCsvLine(String csvLine) {
+        if (csvLine == null || csvLine.trim().isEmpty()) {
+            return;
+        }
+        String[] parts = csvLine.split(",");
 
-    public void setVersion(long version) {
-        this.version = version;
+        if (parts.length >= 3) {
+            this.seatId = parts[0].trim();
+            this.matchId = parts[1].trim();
+            this.status = SeatStatus.valueOf(parts[2].trim());
+
+            if (parts.length >= 4) {
+                this.version = Integer.parseInt(parts[3].trim());
+            } else {
+                this.version = 1;
+            }
+        }
     }
 }
