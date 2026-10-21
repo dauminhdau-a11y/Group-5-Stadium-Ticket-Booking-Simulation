@@ -1,6 +1,5 @@
-fanId,username,password,email
-FAN_001,fan01,demo123,fan01@example.com
-FAN_002,fan02,demo123,fan02@example.com
-FAN_003,fan03,demo123,fan03@example.com
-FAN_004,fan04,demo123,fan04@example.com
-FAN_005,fan05,demo123,fan05@example.com
+FAN_001,FAN_001,fan01,demo123,fan01@example.com,FAN,false,null,,0
+FAN_002,FAN_002,fan02,demo123,fan02@example.com,FAN,false,null,,0
+FAN_003,FAN_003,fan03,demo123,fan03@example.com,FAN,false,null,,0
+FAN_004,FAN_004,fan04,demo123,fan04@example.com,FAN,false,null,,0
+FAN_005,FAN_005,fan05,demo123,fan05@example.com,FAN,false,null,,0

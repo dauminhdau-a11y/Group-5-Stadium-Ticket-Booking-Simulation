@@ -17,7 +17,7 @@ public class FanRepository extends CsvRepository<Fan>{
     }
 
     @Override
-    protected boolean isHeaderLine(String line){
+    public boolean isHeaderLine(String line){
         return "fanId,username,password,email".equalsIgnoreCase(line.trim())
                 || "id,accountId,username,passwordHash,email,role,locked,phone,dateOfBirth,loyaltyPoints"
                         .equalsIgnoreCase(line.trim());

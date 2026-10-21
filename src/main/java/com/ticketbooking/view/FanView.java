@@ -8,7 +8,7 @@ import java.time.format.DateTimeParseException;
 import java.util.Scanner;
 
 public class FanView {
-    private final Scanner scanner;
+    private Scanner scanner;
 
     public FanView(Scanner scanner){
         if (scanner == null){
@@ -50,7 +50,7 @@ public class FanView {
         }
     }
 
-    private void showProfile(Fan fan, FanController fanController){
+    public void showProfile(Fan fan, FanController fanController){
         try {
             Fan profile = fanController.getProfile(fan);
             System.out.println("\n--- Profile ---");
@@ -65,7 +65,7 @@ public class FanView {
         }
     }
 
-    private void editProfile(Fan fan, FanController fanController){
+    public void editProfile(Fan fan, FanController fanController){
         try {
             Fan profile = fanController.getProfile(fan);
             System.out.println("Leave a field blank to keep its current value.");
@@ -104,11 +104,11 @@ public class FanView {
         }
     }
 
-    private String valueOrDefault(String value){
+    public String valueOrDefault(String value){
         return value == null || value.trim().isEmpty() ? "-" : value;
     }
 
-    private String readLine(){
+    public String readLine(){
         return scanner.hasNextLine() ? scanner.nextLine() : null;
     }
 }
