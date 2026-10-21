@@ -10,8 +10,9 @@ public class MainView {
         this.scanner = new Scanner(System.in);
         this.bookingView = bookingView;
     }
-    public void displayMenu(){
-        while(true){
+
+    public void displayMenu() {
+        while (true) {
             System.out.println("=====================================");
             System.out.println("    STADIUM TICKET BOOKING SYSTEM    ");
             System.out.println("=====================================");
@@ -20,12 +21,12 @@ public class MainView {
             System.out.println("3. Run simulation tool");
             System.out.println("0. Exit program");
             System.out.print("Select an option (0-3): ");
-            
+
             int choice = getUserChoice();
 
             switch (choice) {
                 case 1:
-                    System.out.println("Feature under development...");
+                    bookingView.showAvailableSeats();
                     break;
                 case 2:
                     bookingView.showBookingForm();
@@ -41,6 +42,7 @@ public class MainView {
             }
         }
     }
+
     public int getUserChoice() {
         try {
             return Integer.parseInt(scanner.nextLine().trim());
@@ -48,6 +50,5 @@ public class MainView {
             return -1;
         }
     }
-
 
 }
