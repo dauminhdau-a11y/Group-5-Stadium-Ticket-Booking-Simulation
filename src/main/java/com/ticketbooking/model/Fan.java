@@ -20,19 +20,19 @@ public class Fan extends Account{
         this.loyaltyPoints = loyaltyPoints;
     }
     public String getPhone(){
-        return phone;
+        return this.phone;
     }
     public void setPhone(String phone){
         this.phone = phone;
     }
     public LocalDate getDateOfBirth(){
-        return dateOfBirth;
+        return this.dateOfBirth;
     }
     public void setDateOfBirth(LocalDate dateOfBirth){
         this.dateOfBirth = dateOfBirth;
     }
     public int getLoyaltyPoints(){
-        return loyaltyPoints;
+        return this.loyaltyPoints;
     }
     public void setLoyaltyPoints(int loyaltyPoints){
         this.loyaltyPoints = loyaltyPoints;

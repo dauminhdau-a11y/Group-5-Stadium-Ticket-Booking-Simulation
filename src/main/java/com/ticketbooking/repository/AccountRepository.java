@@ -1,7 +1,10 @@
 package com.ticketbooking.repository;
 
 import com.ticketbooking.model.Account;
+import com.ticketbooking.model.enums.Role;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 public class AccountRepository extends CsvRepository<Account> {
@@ -19,7 +22,7 @@ public class AccountRepository extends CsvRepository<Account> {
     }
 
     @Override
-    protected boolean isHeaderLine(String line) {
+    public boolean isHeaderLine(String line) {
         return "id,accountId,username,passwordHash,email,role,locked"
                 .equalsIgnoreCase(line.trim());
     }
@@ -28,12 +31,21 @@ public class AccountRepository extends CsvRepository<Account> {
         if (username == null || username.trim().isEmpty()) {
             return Optional.empty();
         }
+        String normalizedUsername = username.trim();
+        return findFirst(account -> account.getUsername() != null
+                && account.getUsername().equalsIgnoreCase(normalizedUsername));
+    }
+
+    public List<Account> findByRole(Role role) throws IOException {
+        List<Account> accounts = new ArrayList<>();
+        if (role == null) {
+            return accounts;
+        }
         for (Account account : findAll()) {
-            if (account.getUsername() != null
-                    && account.getUsername().equalsIgnoreCase(username.trim())) {
-                return Optional.of(account);
+            if (account.getRole() == role) {
+                accounts.add(account);
             }
         }
-        return Optional.empty();
+        return accounts;
     }
 }

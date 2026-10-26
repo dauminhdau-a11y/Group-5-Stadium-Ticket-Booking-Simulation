@@ -1,32 +1,45 @@
 package com.ticketbooking.view;
 
 import com.ticketbooking.controller.AuthController;
-import com.ticketbooking.controller.FanController;
+import com.ticketbooking.controller.AccountController;
 import com.ticketbooking.exception.AccountLockedException;
 import com.ticketbooking.exception.InvalidCredentialsException;
 import com.ticketbooking.model.Account;
 import com.ticketbooking.model.Fan;
 import com.ticketbooking.model.enums.Role;
+import com.ticketbooking.repository.AccountRepository;
 import com.ticketbooking.repository.FanRepository;
 import java.io.IOException;
 import java.util.Scanner;
 
 public class AuthView {
     private Scanner scanner;
-    private FanController fanController;
     private FanView fanView;
+    private AccountController accountController;
+    private AccountView accountView;
 
     public AuthView(Scanner scanner){
-        this(scanner, new FanController(new FanRepository("data/fans.csv")));
+        this(scanner, createDefaultAccountController(scanner));
     }
 
-    public AuthView(Scanner scanner, FanController fanController){
-        if (scanner == null || fanController == null){
-            throw new IllegalArgumentException("Scanner and fan controller must not be null.");
+    public AuthView(Scanner scanner, AccountController accountController){
+        if (scanner == null || accountController == null){
+            throw new IllegalArgumentException("Scanner and controllers must not be null.");
         }
         this.scanner = scanner;
-        this.fanController = fanController;
         this.fanView = new FanView(scanner);
+        this.accountController = accountController;
+        this.accountView = accountController.getAccountView();
+    }
+
+    private static AccountController createDefaultAccountController(Scanner scanner) {
+        FanRepository fanRepository = new FanRepository("data/fans.csv");
+        AccountRepository staffRepository = new AccountRepository("data/staff.csv");
+        AccountRepository adminRepository = new AccountRepository("data/admins.csv");
+        AuthController authController =
+                new AuthController(fanRepository, staffRepository, adminRepository);
+        return new AccountController(staffRepository, adminRepository, fanRepository,
+                new AccountView(scanner), authController);
     }
 
     public void run(AuthController authController){
@@ -74,7 +87,7 @@ public class AuthView {
             return login(authController, Role.ADMIN);
         }
         if ("4".equals(choice)){
-            return registerFan();
+            return registerFan(authController);
         }
         if ("0".equals(choice)){
             return false;
@@ -88,7 +101,12 @@ public class AuthView {
         System.out.println("\n=== " + (role == Role.STAFF ? "Staff" : "Admin") + " menu ===");
         System.out.println("Welcome, " + account.getUsername() + "!");
         System.out.println("Role: " + role);
-        System.out.println("1. Logout");
+        if (role == Role.ADMIN) {
+            System.out.println("1. Manage accounts");
+            System.out.println("2. Logout");
+        } else {
+            System.out.println("1. Logout");
+        }
         System.out.println("0. Exit");
         System.out.print("Choose: ");
         String input = readLine();
@@ -97,7 +115,12 @@ public class AuthView {
         }
         String choice = input.trim();
 
-        if ("1".equals(choice)) {
+        if (role == Role.ADMIN && "1".equals(choice)) {
+            accountView.run(accountController);
+            return true;
+        }
+        if ((role == Role.ADMIN && "2".equals(choice))
+                || (role != Role.ADMIN && "1".equals(choice))) {
             authController.logout();
             System.out.println("You have logged out.");
             return true;
@@ -124,7 +147,7 @@ public class AuthView {
         String choice = input.trim();
 
         if ("1".equals(choice)){
-            fanView.run(fan, fanController);
+            fanView.run(fan, accountController);
             return true;
         }
         if ("2".equals(choice)){
@@ -152,13 +175,10 @@ public class AuthView {
         }
 
         try {
-            Account account;
-            if (role == Role.FAN) {
-                account = authController.login(username, password);
-            } else if (role == Role.STAFF) {
-                account = authController.loginStaff(username, password);
-            } else {
-                account = authController.loginAdmin(username, password);
+            Account account = authController.login(username, password);
+            if (account.getRole() != role) {
+                authController.logout();
+                throw new InvalidCredentialsException();
             }
             System.out.println("Login successful. Welcome, " + account.getUsername() + "!");
         } catch (InvalidCredentialsException | AccountLockedException e){
@@ -174,7 +194,7 @@ public class AuthView {
         return scanner.hasNextLine() ? scanner.nextLine() : null;
     }
     
-    public boolean registerFan(){
+    public boolean registerFan(AuthController authController){
         System.out.print("Username: ");
         String username = readLine();
         if (username == null){
@@ -200,7 +220,14 @@ public class AuthView {
             return true;
         }
         try{
-            Fan fan = fanController.register(username, password, email, null, null);
+            Fan fan = new Fan();
+            fan.setUsername(username.trim());
+            fan.setPasswordHash(password);
+            fan.setEmail(email.trim());
+            if (!authController.register(fan)) {
+                System.out.println("Unable to register account. Check the details or username.");
+                return true;
+            }
             System.out.println("Registration successful. You can now log in.");
         } catch (IllegalArgumentException e){
             System.out.println(e.getMessage());

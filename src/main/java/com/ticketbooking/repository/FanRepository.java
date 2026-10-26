@@ -27,11 +27,8 @@ public class FanRepository extends CsvRepository<Fan>{
         if (username == null || username.trim().isEmpty()){
             return Optional.empty();
         }
-        for (Fan fan : findAll()){
-            if (fan.getUsername().equalsIgnoreCase(username.trim())){
-                return Optional.of(fan);
-            }
-        }
-        return Optional.empty();
+        String normalizedUsername = username.trim();
+        return findFirst(fan -> fan.getUsername() != null
+                && fan.getUsername().equalsIgnoreCase(normalizedUsername));
     }
 }

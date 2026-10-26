@@ -9,7 +9,7 @@ public abstract class BaseEntity{
         this.id = id;
     }
     public String getId(){
-        return id;
+        return this.id;
     }
     public void setId(String id){
         this.id = id;

@@ -1,6 +1,7 @@
 package com.ticketbooking.view;
 
-import com.ticketbooking.controller.FanController;
+import com.ticketbooking.controller.AccountController;
+import com.ticketbooking.model.Account;
 import com.ticketbooking.model.Fan;
 import java.io.IOException;
 import java.time.LocalDate;
@@ -17,9 +18,9 @@ public class FanView {
         this.scanner = scanner;
     }
 
-    public void run(Fan fan, FanController fanController){
-        if (fan == null || fanController == null){
-            throw new IllegalArgumentException("Fan and fan controller must not be null.");
+    public void run(Fan fan, AccountController accountController){
+        if (fan == null || accountController == null){
+            throw new IllegalArgumentException("Fan and account controller must not be null.");
         }
 
         boolean running = true;
@@ -36,10 +37,10 @@ public class FanView {
 
             switch (choice.trim()){
                 case "1":
-                    showProfile(fan, fanController);
+                    showProfile(fan, accountController);
                     break;
                 case "2":
-                    editProfile(fan, fanController);
+                    editProfile(fan, accountController);
                     break;
                 case "0":
                     running = false;
@@ -50,9 +51,13 @@ public class FanView {
         }
     }
 
-    public void showProfile(Fan fan, FanController fanController){
+    public void showProfile(Fan fan, AccountController accountController){
         try {
-            Fan profile = fanController.getProfile(fan);
+            Account account = accountController.viewProfile(fan.getId());
+            if (!(account instanceof Fan)) {
+                throw new IllegalArgumentException("Fan account was not found.");
+            }
+            Fan profile = (Fan) account;
             System.out.println("\n--- Profile ---");
             System.out.println("Username: " + profile.getUsername());
             System.out.println("Email: " + valueOrDefault(profile.getEmail()));
@@ -65,9 +70,13 @@ public class FanView {
         }
     }
 
-    public void editProfile(Fan fan, FanController fanController){
+    public void editProfile(Fan fan, AccountController accountController){
         try {
-            Fan profile = fanController.getProfile(fan);
+            Account account = accountController.viewProfile(fan.getId());
+            if (!(account instanceof Fan)) {
+                throw new IllegalArgumentException("Fan account was not found.");
+            }
+            Fan profile = (Fan) account;
             System.out.println("Leave a field blank to keep its current value.");
             System.out.print("Email [" + valueOrDefault(profile.getEmail()) + "]: ");
             String emailInput = readLine();
@@ -95,7 +104,10 @@ public class FanView {
                 dateOfBirth = LocalDate.parse(dateInput.trim());
             }
 
-            fanController.updateProfile(fan, email, phone, dateOfBirth);
+            profile.setEmail(email);
+            profile.setPhone(phone);
+            profile.setDateOfBirth(dateOfBirth);
+            accountController.updateFanAccount(profile);
             System.out.println("Profile updated successfully.");
         } catch (DateTimeParseException e){
             System.out.println("Invalid date. Use YYYY-MM-DD.");

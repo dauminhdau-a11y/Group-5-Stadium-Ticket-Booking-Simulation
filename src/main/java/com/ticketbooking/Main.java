@@ -1,9 +1,10 @@
 package com.ticketbooking;
 
 import com.ticketbooking.controller.AuthController;
-import com.ticketbooking.controller.FanController;
+import com.ticketbooking.controller.AccountController;
 import com.ticketbooking.repository.AccountRepository;
 import com.ticketbooking.repository.FanRepository;
+import com.ticketbooking.view.AccountView;
 import com.ticketbooking.view.AuthView;
 import java.util.Scanner;
 
@@ -14,8 +15,10 @@ public class Main {
         AccountRepository adminRepository = new AccountRepository("data/admins.csv");
         AuthController authController =
                 new AuthController(fanRepository, staffRepository, adminRepository);
-        FanController fanController = new FanController(fanRepository);
-        AuthView authView = new AuthView(new Scanner(System.in), fanController);
+        Scanner scanner = new Scanner(System.in);
+        AccountController accountController = new AccountController(staffRepository,
+                adminRepository, fanRepository, new AccountView(scanner), authController);
+        AuthView authView = new AuthView(scanner, accountController);
         authView.run(authController);
     }
 }

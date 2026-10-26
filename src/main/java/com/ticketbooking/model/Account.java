@@ -15,8 +15,8 @@ public class Account extends BaseEntity{
     }
 
     public Account(String id, String accountId, String username, String passwordHash, String email, Role role, boolean locked){
-        super(id);
-        this.accountId = accountId;
+        super(id != null ? id : accountId);
+        this.accountId = accountId != null ? accountId : id;
         this.username = username;
         this.passwordHash = passwordHash;
         this.email = email;
@@ -24,51 +24,45 @@ public class Account extends BaseEntity{
         this.locked = locked;
     }
     public String getAccountId(){
-        return getId();
-
+        return accountId != null ? accountId : getId();
     }
     public void setAccountId(String accountId){
+        this.accountId = accountId;
         setId(accountId);
     }
     public String getUsername(){
-        return username;
+        return this.username;
     }
     public void setUsername(String username){
         this.username = username;
     }
     public String getPasswordHash(){
-        return passwordHash;
+        return this.passwordHash;
     }
     public void setPasswordHash(String passwordHash){
         this.passwordHash = passwordHash;
     }
     public String getEmail(){
-        return email;
+        return this.email;
     }
     public void setEmail(String email){
         this.email = email;
     }
     public Role getRole(){
-        return role;
+        return this.role;
     }
     public void setRole(Role role){
         this.role = role;
     }
-    public String getFullName(){
-        return username;
-    }
-    public void setFullName(String fullName){
-        this.username = fullName;
-    }
     public boolean isLocked(){
-        return locked;
+        return this.locked;
     }
     public void setLocked(boolean locked){
         this.locked = locked;
     }
     @Override 
     public String toCsvLine(){
-        return getId()+","+accountId+","+username+","+passwordHash+","+email+","+role+","+locked;
+        return getId()+","+getAccountId()+","+username+","+passwordHash+","+email+","+role+","+locked;
     }
     @Override 
     public Account fromCsvLine(String line ){
@@ -76,7 +70,7 @@ public class Account extends BaseEntity{
         if (values.length != 7){
             throw new IllegalArgumentException("Invalid Account CSV data");
         }
-        return new Account(values[0], values[1], values[2], values[3], values[4], Role.valueOf(values[5]), Boolean.parseBoolean(values[6]));
-    
+        Account account = new Account(values[0], values[1], values[2], values[3], values[4], Role.valueOf(values[5]), Boolean.parseBoolean(values[6]));
+        return account;
     }
 }

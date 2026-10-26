@@ -9,6 +9,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 public abstract class CsvRepository<T extends BaseEntity>{
     private Path filePath;
@@ -19,7 +20,7 @@ public abstract class CsvRepository<T extends BaseEntity>{
 
     public abstract T parseLine(String line);
 
-    protected boolean isHeaderLine(String line){
+    public boolean isHeaderLine(String line){
         return false;
     }
 
@@ -28,6 +29,7 @@ public abstract class CsvRepository<T extends BaseEntity>{
         if (!Files.exists(filePath)){
             return entities;
         }
+
         for (String line : Files.readAllLines(filePath, StandardCharsets.UTF_8)){
             if (!line.trim().isEmpty() && !isHeaderLine(line)){
                 entities.add(parseLine(line));
@@ -35,6 +37,19 @@ public abstract class CsvRepository<T extends BaseEntity>{
         }
         return entities;
     }
+
+    public Optional<T> findFirst(Predicate<T> predicate) throws IOException {
+        if (predicate == null) {
+            throw new IllegalArgumentException("Search predicate must not be null.");
+        }
+        for (T entity : findAll()) {
+            if (predicate.test(entity)) {
+                return Optional.of(entity);
+            }
+        }
+        return Optional.empty();
+    }
+
     public void save(T entity) throws IOException{
         if (entity == null || entity.getId()==null || entity.getId().trim().isEmpty()){
             throw new IllegalArgumentException("Entity and entity ID not must be empty");
