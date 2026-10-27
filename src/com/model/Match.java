@@ -1,6 +1,9 @@
 package com.model;
 
 import java.time.LocalDateTime;
+import java.util.List;
+
+import com.util.CsvParser;
 
 public class Match extends SimpleEntity {
     private String matchId;
@@ -18,9 +21,11 @@ public class Match extends SimpleEntity {
     public boolean removeMatch() { return false; }
     public boolean createMatch() { return false; }
     public boolean updateMatch() { return false; }
-    @Override public String toCsvLine() { return matchId + "," + startTime; }
+    @Override public String toCsvLine() {
+        return CsvParser.encode(matchId, startTime == null ? "" : startTime.toString());
+    }
     @Override public void fromCsvLine(String csvLine) {
-        String[] values = csvLine.split(",", -1);
-        matchId = values[0]; startTime = LocalDateTime.parse(values[1]);
+        List<String> values = CsvParser.parseLine(csvLine);
+        matchId = values.get(0); startTime = LocalDateTime.parse(values.get(1));
     }
 }

@@ -8,8 +8,12 @@ public class Fan extends User {
 
     public Fan() { }
     public Fan(String userId, String username, String password, String email, String role, int loyaltyPoints) {
-        super(userId, username, password, email, role);
-        this.loyaltyPoints = loyaltyPoints;
+        super(userId, username, password, email, role, "", "", loyaltyPoints);
+    }
+
+    public Fan(String userId, String username, String password, String email, String role,
+               String fullName, String phoneNumber, int loyaltyPoints) {
+        super(userId, username, password, email, role, fullName, phoneNumber, loyaltyPoints);
     }
 
     public int getLoyaltyPoints() { return loyaltyPoints; }
