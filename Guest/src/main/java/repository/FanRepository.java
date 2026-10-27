@@ -3,8 +3,7 @@ package repository;
 import model.Fan;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class FanRepository {
     private String filePath;
@@ -19,6 +18,13 @@ public class FanRepository {
         String[] candidatePaths = {
             "Guest/data/" + fileName,
             "data/" + fileName,
+            "../data/" + fileName,
+            "../Guest/data/" + fileName,
+            "../../Guest/data/" + fileName,
+            "../../Group-5-Stadium-Ticket-Booking-Simulation/Guest/data/" + fileName,
+            "../../Group-5-Stadium-Ticket-Booking-Simulation/data/" + fileName,
+            "../Group-5-Stadium-Ticket-Booking-Simulation/Guest/data/" + fileName,
+            "../Group-5-Stadium-Ticket-Booking-Simulation/data/" + fileName,
             "Group-5-Stadium-Ticket-Booking-Simulation/Guest/data/" + fileName,
             "Group-5-Stadium-Ticket-Booking-Simulation/data/" + fileName,
             "Group-5-Stadium-Ticket-Booking-Simulation-main/Group-5-Stadium-Ticket-Booking-Simulation/Guest/data/" + fileName,
@@ -36,6 +42,9 @@ public class FanRepository {
         String[] candidateDirs = {
             "Guest/data",
             "data",
+            "../data",
+            "../Guest/data",
+            "../../Guest/data",
             "Group-5-Stadium-Ticket-Booking-Simulation/Guest/data",
             "Group-5-Stadium-Ticket-Booking-Simulation/data",
             "Group-5-Stadium-Ticket-Booking-Simulation-main/Group-5-Stadium-Ticket-Booking-Simulation/Guest/data",
@@ -70,6 +79,52 @@ public class FanRepository {
         }
     }
 
+    private List<File> getAllTargetFiles() {
+        Set<String> visitedCanonicalPaths = new HashSet<>();
+        List<File> targets = new ArrayList<>();
+
+        File mainFile = new File(filePath);
+        try {
+            visitedCanonicalPaths.add(mainFile.getCanonicalPath());
+            targets.add(mainFile);
+        } catch (Exception ignored) {
+            targets.add(mainFile);
+        }
+
+        String fileName = "fans.csv";
+        String[] candidatePaths = {
+            "Guest/data/" + fileName,
+            "data/" + fileName,
+            "../data/" + fileName,
+            "../Guest/data/" + fileName,
+            "../../Guest/data/" + fileName,
+            "../../Group-5-Stadium-Ticket-Booking-Simulation/Guest/data/" + fileName,
+            "../../Group-5-Stadium-Ticket-Booking-Simulation/data/" + fileName,
+            "../Group-5-Stadium-Ticket-Booking-Simulation/Guest/data/" + fileName,
+            "../Group-5-Stadium-Ticket-Booking-Simulation/data/" + fileName,
+            "Group-5-Stadium-Ticket-Booking-Simulation/Guest/data/" + fileName,
+            "Group-5-Stadium-Ticket-Booking-Simulation/data/" + fileName,
+            "Group-5-Stadium-Ticket-Booking-Simulation-main/Group-5-Stadium-Ticket-Booking-Simulation/Guest/data/" + fileName,
+            "Group-5-Stadium-Ticket-Booking-Simulation-main/Group-5-Stadium-Ticket-Booking-Simulation/data/" + fileName,
+            "Group-5-Stadium-Ticket-Booking-Simulation-main/Guest/data/" + fileName
+        };
+
+        for (String p : candidatePaths) {
+            File f = new File(p);
+            if (f.exists()) {
+                try {
+                    String cp = f.getCanonicalPath();
+                    if (!visitedCanonicalPaths.contains(cp)) {
+                        visitedCanonicalPaths.add(cp);
+                        targets.add(f);
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+        }
+        return targets;
+    }
+
     public synchronized List<Fan> findAll() {
         List<Fan> list = new ArrayList<>();
         File file = new File(filePath);
@@ -93,55 +148,29 @@ public class FanRepository {
     }
 
     public synchronized boolean save(Fan fan) {
-        File file = new File(filePath);
-        if (file.getParentFile() != null && !file.getParentFile().exists()) {
-            file.getParentFile().mkdirs();
-        }
-        boolean writeHeader = !file.exists() || file.length() == 0;
+        List<File> allFiles = getAllTargetFiles();
+        boolean anySaved = false;
 
-        try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(new FileOutputStream(file, true), StandardCharsets.UTF_8))) {
-            if (writeHeader) {
-                pw.println("fanId,username,fullName,email,phone,password");
-            }
-            pw.println(fan.toCsv());
-            pw.flush();
-            System.out.println("📁 Đã ghi vào file: " + file.getAbsolutePath());
-            syncToOtherFiles(fan);
-            return true;
-        } catch (IOException e) {
-            System.err.println("Lỗi ghi fans.csv: " + e.getMessage());
-            return false;
-        }
-    }
-
-    private void syncToOtherFiles(Fan fan) {
-        String fileName = "fans.csv";
-        String[] candidatePaths = {
-            "Guest/data/" + fileName,
-            "data/" + fileName,
-            "Group-5-Stadium-Ticket-Booking-Simulation/Guest/data/" + fileName,
-            "Group-5-Stadium-Ticket-Booking-Simulation/data/" + fileName,
-            "Group-5-Stadium-Ticket-Booking-Simulation-main/Group-5-Stadium-Ticket-Booking-Simulation/Guest/data/" + fileName,
-            "Group-5-Stadium-Ticket-Booking-Simulation-main/Group-5-Stadium-Ticket-Booking-Simulation/data/" + fileName,
-            "Group-5-Stadium-Ticket-Booking-Simulation-main/Guest/data/" + fileName
-        };
-        for (String path : candidatePaths) {
-            File f = new File(path);
-            if (f.exists() && !f.getAbsolutePath().equalsIgnoreCase(new File(filePath).getAbsolutePath())) {
-                try {
-                    boolean writeHeader = f.length() == 0;
-                    try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(new FileOutputStream(f, true), StandardCharsets.UTF_8))) {
-                        if (writeHeader) {
-                            pw.println("fanId,username,fullName,email,phone,password");
-                        }
-                        pw.println(fan.toCsv());
-                        pw.flush();
-                        System.out.println("📁 Đã đồng bộ sang file: " + f.getAbsolutePath());
-                    }
-                } catch (Exception ignored) {
+        for (File file : allFiles) {
+            try {
+                if (file.getParentFile() != null && !file.getParentFile().exists()) {
+                    file.getParentFile().mkdirs();
                 }
+                boolean writeHeader = !file.exists() || file.length() == 0;
+                try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(new FileOutputStream(file, true), StandardCharsets.UTF_8))) {
+                    if (writeHeader) {
+                        pw.println("fanId,username,fullName,email,phone,password");
+                    }
+                    pw.println(fan.toCsv());
+                    pw.flush();
+                    anySaved = true;
+                    System.out.println("📁 Đã cập nhật file: " + file.getAbsolutePath());
+                }
+            } catch (IOException e) {
+                System.err.println("Lỗi ghi file " + file.getAbsolutePath() + ": " + e.getMessage());
             }
         }
+        return anySaved;
     }
 
     public synchronized boolean update(Fan updatedFan) {
@@ -156,12 +185,15 @@ public class FanRepository {
         }
         if (!found) return false;
 
-        boolean success = writeAllFans(new File(filePath), fans);
-        if (success) {
-            System.out.println("📁 Đã cập nhật file: " + new File(filePath).getAbsolutePath());
-            syncAllToOtherFiles(fans);
+        List<File> allFiles = getAllTargetFiles();
+        boolean anyUpdated = false;
+        for (File file : allFiles) {
+            if (writeAllFans(file, fans)) {
+                anyUpdated = true;
+                System.out.println("📁 Đã cập nhật file: " + file.getAbsolutePath());
+            }
         }
-        return success;
+        return anyUpdated;
     }
 
     private boolean writeAllFans(File file, List<Fan> fans) {
@@ -180,27 +212,6 @@ public class FanRepository {
         } catch (IOException e) {
             System.err.println("Lỗi cập nhật file: " + file.getPath() + " - " + e.getMessage());
             return false;
-        }
-    }
-
-    private void syncAllToOtherFiles(List<Fan> fans) {
-        String fileName = "fans.csv";
-        String[] candidatePaths = {
-            "Guest/data/" + fileName,
-            "data/" + fileName,
-            "Group-5-Stadium-Ticket-Booking-Simulation/Guest/data/" + fileName,
-            "Group-5-Stadium-Ticket-Booking-Simulation/data/" + fileName,
-            "Group-5-Stadium-Ticket-Booking-Simulation-main/Group-5-Stadium-Ticket-Booking-Simulation/Guest/data/" + fileName,
-            "Group-5-Stadium-Ticket-Booking-Simulation-main/Group-5-Stadium-Ticket-Booking-Simulation/data/" + fileName,
-            "Group-5-Stadium-Ticket-Booking-Simulation-main/Guest/data/" + fileName
-        };
-        for (String path : candidatePaths) {
-            File f = new File(path);
-            if (f.exists() && !f.getAbsolutePath().equalsIgnoreCase(new File(filePath).getAbsolutePath())) {
-                if (writeAllFans(f, fans)) {
-                    System.out.println("📁 Đã đồng bộ sang file: " + f.getAbsolutePath());
-                }
-            }
         }
     }
 
