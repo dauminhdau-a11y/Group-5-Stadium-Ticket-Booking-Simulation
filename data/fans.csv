@@ -1,3 +1,7 @@
-﻿fanId,username,fullName,email,phone,password
-FAN_1793106572059,tandat,Nguyen Tan Dat,tandat@gmail.com,0912345678,123456
-FAN_1793106861490,tandat301,Nguyen Tan Dat,tandatnguyen@gmail.com,0776666806,123456
+FAN_001,FAN_001,fan01,demo123,fan01@example.com,FAN,false,null,,0
+FAN_002,FAN_002,fan02,demo123,fan02@example.com,FAN,false,null,,0
+FAN_003,FAN_003,fan03,demo123,fan03@example.com,FAN,false,null,,0
+FAN_004,FAN_004,fan04,demo123,fan04@example.com,FAN,false,null,,0
+FAN_005,FAN_005,fan05,demo123,fan05@example.com,FAN,false,null,,0
+FAN_1793106572059,FAN_1793106572059,tandat,123456,tandat@gmail.com,FAN,false,0912345678,,0
+FAN_1793106861490,FAN_1793106861490,tandat301,123456,tandatnguyen@gmail.com,FAN,false,0776666806,,0

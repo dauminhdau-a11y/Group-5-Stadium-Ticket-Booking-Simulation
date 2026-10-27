@@ -1,0 +1,5 @@
+ADMIN-f4db78c0-093f-46c0-abfe-3daf877e45c8,staff01,pbkdf2$120000$O7ErVjFFw5uV2pFMuSDOMg==$IoMwnLd68cCZuYuF6cPb23beS2dP87nmyONL5rJ/Ujo=,,ADMIN,,,0
+STAFF-b5310350-a300-4d8d-8c7d-638ae97bd316,minhtai,pbkdf2$120000$/hYICTuy6GTYhvFM5NrljA==$q5qcbaluVj6XJSWFwF7IV03lwvFIWY0VNqYmr4nCPVU=,minh@minhgmail.minhgmailcom,STAFF,,,0
+STAFF-DEMO,staff-demo,pbkdf2$120000$a46OJzpqFiRsmIq4Kttkog==$bBAl3SemR/jmV7HZSTh7nJbSwJAlL+NxTyv3RUTtjH8=,staff-demo@example.com,STAFF,,,0
+FAN-001,fan01,123456,fan1@gmail.com,FAN,,,0
+FAN-374643,long,pbkdf2$120000$W5nmp3KEjo4hA2DkVYoP7g==$xg1yhFJM9f6gou9ezWcTk7g7O/5a1utwVGae8OXC4qM=,long@ggamilmail.com,FAN,long,0479374643,50
