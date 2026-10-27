@@ -45,7 +45,7 @@ public class SeatRepository {
                 }
             }
         } catch (IOException e) {
-            System.err.println("Lỗi đọc file seat.csv: " + e.getMessage());
+            System.err.println("Loi doc file seat.csv: " + e.getMessage());
         }
         return list;
     }

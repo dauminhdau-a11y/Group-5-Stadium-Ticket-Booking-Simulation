@@ -17,6 +17,13 @@ public class MatchRepository {
         String[] candidatePaths = {
             "Guest/data/" + fileName,
             "data/" + fileName,
+            "../data/" + fileName,
+            "../Guest/data/" + fileName,
+            "../../Guest/data/" + fileName,
+            "../../Group-5-Stadium-Ticket-Booking-Simulation/Guest/data/" + fileName,
+            "../../Group-5-Stadium-Ticket-Booking-Simulation/data/" + fileName,
+            "../Group-5-Stadium-Ticket-Booking-Simulation/Guest/data/" + fileName,
+            "../Group-5-Stadium-Ticket-Booking-Simulation/data/" + fileName,
             "Group-5-Stadium-Ticket-Booking-Simulation/Guest/data/" + fileName,
             "Group-5-Stadium-Ticket-Booking-Simulation/data/" + fileName,
             "Group-5-Stadium-Ticket-Booking-Simulation-main/Group-5-Stadium-Ticket-Booking-Simulation/Guest/data/" + fileName,
@@ -44,8 +51,15 @@ public class MatchRepository {
                 }
             }
         } catch (IOException e) {
-            System.err.println("Lỗi đọc file matches.csv: " + e.getMessage());
+            System.err.println("Loi doc file matches.csv: " + e.getMessage());
         }  
         return list;
+    }
+
+    public Optional<Match> findById(String matchId) {
+        if (matchId == null || matchId.trim().isEmpty()) return Optional.empty();
+        return findAll().stream()
+                .filter(m -> m.getMatchId().equalsIgnoreCase(matchId.trim()))
+                .findFirst();
     }
 }

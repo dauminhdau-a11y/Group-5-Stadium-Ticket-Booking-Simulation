@@ -4,6 +4,7 @@ import model.Section;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class SectionRepository {
     private String filePath;
@@ -17,6 +18,13 @@ public class SectionRepository {
         String[] candidatePaths = {
             "Guest/data/" + fileName,
             "data/" + fileName,
+            "../data/" + fileName,
+            "../Guest/data/" + fileName,
+            "../../Guest/data/" + fileName,
+            "../../Group-5-Stadium-Ticket-Booking-Simulation/Guest/data/" + fileName,
+            "../../Group-5-Stadium-Ticket-Booking-Simulation/data/" + fileName,
+            "../Group-5-Stadium-Ticket-Booking-Simulation/Guest/data/" + fileName,
+            "../Group-5-Stadium-Ticket-Booking-Simulation/data/" + fileName,
             "Group-5-Stadium-Ticket-Booking-Simulation/Guest/data/" + fileName,
             "Group-5-Stadium-Ticket-Booking-Simulation/data/" + fileName,
             "Group-5-Stadium-Ticket-Booking-Simulation-main/Group-5-Stadium-Ticket-Booking-Simulation/Guest/data/" + fileName,
@@ -44,8 +52,15 @@ public class SectionRepository {
                 }
             }
         } catch (IOException e) {
-            System.err.println("Lỗi đọc file sections.csv: " + e.getMessage());
+            System.err.println("Loi doc file sections.csv: " + e.getMessage());
         }
         return list;
+    }
+
+    public List<Section> findByStadium(String stadiumId) {
+        if (stadiumId == null || stadiumId.trim().isEmpty()) return findAll();
+        return findAll().stream()
+                .filter(s -> s.getStadiumId().equalsIgnoreCase(stadiumId.trim()))
+                .collect(Collectors.toList());
     }
 }

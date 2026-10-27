@@ -75,7 +75,7 @@ public class FanRepository {
                 }
             }
         } catch (IOException e) {
-            System.err.println("Lỗi khởi tạo fans.csv: " + e.getMessage());
+            System.err.println("Loi khoi tao fans.csv: " + e.getMessage());
         }
     }
 
@@ -83,12 +83,14 @@ public class FanRepository {
         Set<String> visitedCanonicalPaths = new HashSet<>();
         List<File> targets = new ArrayList<>();
 
-        File mainFile = new File(filePath);
-        try {
-            visitedCanonicalPaths.add(mainFile.getCanonicalPath());
-            targets.add(mainFile);
-        } catch (Exception ignored) {
-            targets.add(mainFile);
+        if (filePath != null) {
+            File primary = new File(filePath);
+            try {
+                visitedCanonicalPaths.add(primary.getCanonicalPath());
+                targets.add(primary);
+            } catch (Exception ignored) {
+                targets.add(primary);
+            }
         }
 
         String fileName = "fans.csv";
@@ -142,7 +144,7 @@ public class FanRepository {
                 }
             }
         } catch (IOException e) {
-            System.err.println("Lỗi đọc fans.csv: " + e.getMessage());
+            System.err.println("Loi doc fans.csv: " + e.getMessage());
         }
         return list;
     }
@@ -157,17 +159,32 @@ public class FanRepository {
                     file.getParentFile().mkdirs();
                 }
                 boolean writeHeader = !file.exists() || file.length() == 0;
+                boolean needsLeadingNewline = false;
+
+                if (file.exists() && file.length() > 0) {
+                    try (RandomAccessFile raf = new RandomAccessFile(file, "r")) {
+                        raf.seek(file.length() - 1);
+                        byte lastByte = raf.readByte();
+                        if (lastByte != '\n' && lastByte != '\r') {
+                            needsLeadingNewline = true;
+                        }
+                    } catch (Exception ignored) {
+                    }
+                }
+
                 try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(new FileOutputStream(file, true), StandardCharsets.UTF_8))) {
                     if (writeHeader) {
                         pw.println("fanId,username,fullName,email,phone,password");
+                    } else if (needsLeadingNewline) {
+                        pw.println();
                     }
                     pw.println(fan.toCsv());
                     pw.flush();
                     anySaved = true;
-                    System.out.println("📁 Đã cập nhật file: " + file.getAbsolutePath());
+                    System.out.println("[FILE] Da cap nhat file: " + file.getAbsolutePath());
                 }
             } catch (IOException e) {
-                System.err.println("Lỗi ghi file " + file.getAbsolutePath() + ": " + e.getMessage());
+                System.err.println("Loi ghi file " + file.getAbsolutePath() + ": " + e.getMessage());
             }
         }
         return anySaved;
@@ -190,7 +207,7 @@ public class FanRepository {
         for (File file : allFiles) {
             if (writeAllFans(file, fans)) {
                 anyUpdated = true;
-                System.out.println("📁 Đã cập nhật file: " + file.getAbsolutePath());
+                System.out.println("[FILE] Da cap nhat file: " + file.getAbsolutePath());
             }
         }
         return anyUpdated;
@@ -210,7 +227,7 @@ public class FanRepository {
                 return true;
             }
         } catch (IOException e) {
-            System.err.println("Lỗi cập nhật file: " + file.getPath() + " - " + e.getMessage());
+            System.err.println("Loi cap nhat file: " + file.getPath() + " - " + e.getMessage());
             return false;
         }
     }

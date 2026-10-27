@@ -1,0 +1,6 @@
+matchId,matchName,stadiumId,matchDate,homeTeam,awayTeam
+M01,Vietnam vs Thailand,MY_DINH,2026-11-15,Vietnam,Thailand
+M02,Hanoi FC vs HAGL,HANG_DAY,2026-11-20,Hanoi FC,HAGL
+M03,Vietnam vs Indonesia,MY_DINH,2026-12-05,Vietnam,Indonesia
+M04,TPHCM vs Nam Dinh,THONG_NHAT,2026-12-10,TPHCM,Nam Dinh
+M05,Vietnam vs Malaysia,MY_DINH,2026-12-25,Vietnam,Malaysia

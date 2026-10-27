@@ -1,0 +1,10 @@
+sectionId,sectionName,basePrice,stadiumId
+A_VIP,Khan dai A VIP,1000000,MY_DINH
+A_STD,Khan dai A Tieu chuan,500000,MY_DINH
+B_STD,Khan dai B,350000,MY_DINH
+C_STD,Khan dai C,200000,MY_DINH
+D_STD,Khan dai D,200000,MY_DINH
+HD_A,Khan dai A Hang Day,400000,HANG_DAY
+HD_B,Khan dai B Hang Day,250000,HANG_DAY
+TN_A,Khan dai A Thong Nhat,450000,THONG_NHAT
+TN_B,Khan dai B Thong Nhat,250000,THONG_NHAT
