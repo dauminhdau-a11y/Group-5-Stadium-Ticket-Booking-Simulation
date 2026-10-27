@@ -1,0 +1,2 @@
+id,accountId,username,passwordHash,email,role,locked
+ADMIN_001,ADMIN_001,admin01,demo123,admin01@example.com,ADMIN,false

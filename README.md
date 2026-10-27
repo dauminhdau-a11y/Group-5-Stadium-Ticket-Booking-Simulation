@@ -14,6 +14,22 @@
 | 5 | Nguyễn Tấn Đạt | QE200091 | Thành viên |
 ## Danh sách chức năng hệ thống
 
+### Đăng nhập theo vai trò
+
+Màn hình đăng nhập hỗ trợ ba luồng riêng: Fan dùng `data/fans.csv`, Staff dùng
+`data/staff.csv` và Admin dùng `data/admins.csv`. Mỗi tài khoản chỉ đăng nhập
+được qua đúng luồng tương ứng với role trong dữ liệu. Tài khoản mẫu (mật khẩu
+`demo123`):
+
+| Role | Username |
+| :--- | :--- |
+| FAN | `fan01` |
+| STAFF | `staff01` |
+| ADMIN | `admin01` |
+
+CSV Staff/Admin dùng các cột
+`id,accountId,username,passwordHash,email,role,locked`.
+
 **1. Chức năng dành cho khách (Guest)**
 * Đăng ký tài khoản (có ràng buộc dữ liệu).
 * Đăng nhập hệ thống.
