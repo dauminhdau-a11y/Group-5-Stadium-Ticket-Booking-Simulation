@@ -1,7 +1,7 @@
 package view;
 
 import java.util.Scanner;
-
+import com.view.SimulatorView;
 public class MainView {
     private Scanner scanner;
     private BookingView bookingView;
@@ -40,8 +40,10 @@ public class MainView {
                     bookingView.showBookingForm();
                     break;
                 case 4:
-                    System.out.println("\n[NOTICE]: Simulation tool is under development...\n");
-                    break;
+                    SimulatorView simulatorView =
+            new SimulatorView(scanner, new com.controller.SimulatorController());
+    simulatorView.showSimulator();
+    break;
                 case 0:
                     System.out.println("\nThank you for using the Stadium Ticket Booking System. Goodbye!");
                     System.exit(0);
