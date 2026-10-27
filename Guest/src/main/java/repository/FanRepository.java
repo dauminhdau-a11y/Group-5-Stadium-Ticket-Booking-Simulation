@@ -105,6 +105,7 @@ public class FanRepository {
             }
             pw.println(fan.toCsv());
             pw.flush();
+            System.out.println("📁 Đã ghi vào file: " + file.getAbsolutePath());
             syncToOtherFiles(fan);
             return true;
         } catch (IOException e) {
@@ -135,6 +136,7 @@ public class FanRepository {
                         }
                         pw.println(fan.toCsv());
                         pw.flush();
+                        System.out.println("📁 Đã đồng bộ sang file: " + f.getAbsolutePath());
                     }
                 } catch (Exception ignored) {
                 }
@@ -156,6 +158,7 @@ public class FanRepository {
 
         boolean success = writeAllFans(new File(filePath), fans);
         if (success) {
+            System.out.println("📁 Đã cập nhật file: " + new File(filePath).getAbsolutePath());
             syncAllToOtherFiles(fans);
         }
         return success;
@@ -194,7 +197,9 @@ public class FanRepository {
         for (String path : candidatePaths) {
             File f = new File(path);
             if (f.exists() && !f.getAbsolutePath().equalsIgnoreCase(new File(filePath).getAbsolutePath())) {
-                writeAllFans(f, fans);
+                if (writeAllFans(f, fans)) {
+                    System.out.println("📁 Đã đồng bộ sang file: " + f.getAbsolutePath());
+                }
             }
         }
     }
