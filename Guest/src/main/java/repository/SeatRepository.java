@@ -1,26 +1,43 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package repository;
 
 import model.Seat;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.List; 
+import java.util.List;
+
 public class SeatRepository {
-   private final String filePath = "data/seat.csv";
-   public synchronized List<Seat> findAll(){
-    List<Seat> list = new ArrayList<>();
+    private String filePath;
+
+    public SeatRepository() {
+        this.filePath = resolveFilePath();
+    }
+
+    private String resolveFilePath() {
+        String fileName = "seat.csv";
+        String[] candidatePaths = {
+            "Guest/data/" + fileName,
+            "data/" + fileName,
+            "Group-5-Stadium-Ticket-Booking-Simulation/Guest/data/" + fileName,
+            "Group-5-Stadium-Ticket-Booking-Simulation/data/" + fileName,
+            "Group-5-Stadium-Ticket-Booking-Simulation-main/Group-5-Stadium-Ticket-Booking-Simulation/Guest/data/" + fileName,
+            "Group-5-Stadium-Ticket-Booking-Simulation-main/Group-5-Stadium-Ticket-Booking-Simulation/data/" + fileName,
+            "Group-5-Stadium-Ticket-Booking-Simulation-main/Guest/data/" + fileName
+        };
+        for (String path : candidatePaths) {
+            File f = new File(path);
+            if (f.exists()) return f.getAbsolutePath();
+        }
+        return "data/" + fileName;
+    }
+
+    public synchronized List<Seat> findAll() {
+        List<Seat> list = new ArrayList<>();
         File file = new File(filePath);
         if (!file.exists()) return list;
 
-        try (BufferedReader br = Files.newBufferedReader(Paths.get(filePath))) {
-            String line = br.readLine(); 
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8))) {
+            String line = br.readLine();
             while ((line = br.readLine()) != null) {
                 if (!line.trim().isEmpty()) {
                     Seat seat = Seat.fromCsv(line);
@@ -28,9 +45,8 @@ public class SeatRepository {
                 }
             }
         } catch (IOException e) {
-            System.err.println("Lỗi đọc file seats.csv: " + e.getMessage());
+            System.err.println("Lỗi đọc file seat.csv: " + e.getMessage());
         }
         return list;
-   }
-    
+    }
 }

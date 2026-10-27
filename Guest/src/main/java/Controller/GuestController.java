@@ -1,14 +1,12 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package Controller;
+
 import model.*;
 import repository.*;
 import java.util.List;
 import java.util.stream.Collectors;
+
 public class GuestController {
-private final SeatRepository seatRepository;
+    private final SeatRepository seatRepository;
     private final SectionRepository sectionRepository;
     private final MatchRepository matchRepository;
     private final FanRepository fanRepository;
@@ -32,7 +30,7 @@ private final SeatRepository seatRepository;
         if (fullName == null || fullName.trim().isEmpty()) {
             throw new Exception("Họ và tên không được để trống!");
         }
-        if (email == null || !email.matches("^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$")) {
+        if (email == null || !email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$")) {
             throw new Exception("Email không đúng định dạng!");
         }
         if (phone == null || !phone.matches("^0[0-9]{9}$")) {
@@ -48,7 +46,10 @@ private final SeatRepository seatRepository;
 
         String fanId = "FAN_" + System.currentTimeMillis();
         Fan newFan = new Fan(fanId, username.trim(), fullName.trim(), email.trim(), phone.trim(), password);
-        fanRepository.save(newFan);
+        boolean saved = fanRepository.save(newFan);
+        if (!saved) {
+            throw new Exception("Lỗi: Không thể lưu dữ liệu tài khoản vào hệ thống!");
+        }
         return newFan;
     }
 
@@ -72,7 +73,7 @@ private final SeatRepository seatRepository;
 
         if (fullName != null && !fullName.trim().isEmpty()) fan.setFullName(fullName.trim());
         if (email != null && !email.trim().isEmpty()) {
-            if (!email.matches("^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$")) throw new Exception("Email không hợp lệ!");
+            if (!email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$")) throw new Exception("Email không hợp lệ!");
             fan.setEmail(email.trim());
         }
         if (phone != null && !phone.trim().isEmpty()) {
@@ -84,7 +85,10 @@ private final SeatRepository seatRepository;
             fan.setPassword(newPassword);
         }
 
-        fanRepository.update(fan);
+        boolean updated = fanRepository.update(fan);
+        if (!updated) {
+            throw new Exception("Lỗi: Không thể cập nhật thông tin người dùng vào file dữ liệu!");
+        }
         return fan;
     }
 

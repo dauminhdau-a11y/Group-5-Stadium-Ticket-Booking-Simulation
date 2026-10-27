@@ -1,4 +1,3 @@
-
 package View;
 
 import Controller.GuestController;
@@ -19,13 +18,13 @@ public class GuestView {
     public void run() {
         while (true) {
             System.out.println("\n================================================");
-            System.out.println("||         STADIUM TICKET BOOKING - GUEST MODULE           || ");
+            System.out.println("||         STADIUM TICKET BOOKING - GUEST MODULE           ||");
             if (currentFan != null) {
-                System.out.printf("|| Đang dang nhap:  ||", currentFan.getFullName());
+                System.out.printf("|| Đang đăng nhập: %-42s ||\n", currentFan.getFullName() + " (" + currentFan.getUsername() + ")");
             } else {
-                System.out.println("  Vai trò: KHACH VANG LAI (GUEST)                         || ");
+                System.out.println("|| Vai trò: KHÁCH VÃNG LAI (GUEST)                            ||");
             }
-            System.out.println("===================================");
+            System.out.println("================================================");
             System.out.println(" 1. Xem lich thi dau, Tim kiem, Loc (Trang thai het ve)    ||");
             System.out.println(" 2. Xem khan dai, gia ve , So đo trang thai ghe           || ");
             if (currentFan == null) {
@@ -55,14 +54,14 @@ public class GuestView {
                     if (currentFan == null) handleLogin();
                     else {
                         currentFan = null;
-                        System.out.println("🔒 Da đang xuat!");
+                        System.out.println("🔒 Đã đăng xuất!");
                     }
                     break;
                 case "0":
-                    System.out.println("Cam on ban đa su dung he thong!");
+                    System.out.println("Cảm ơn bạn đã sử dụng hệ thống!");
                     return;
                 default:
-                    System.out.println("❌ Lua chon khong hop le!");
+                    System.out.println("❌ Lựa chọn không hợp lệ!");
             }
         }
     }
@@ -145,35 +144,37 @@ public class GuestView {
 
     private void handleRegister() {
         System.out.println("\n--- DANG KY TAI KHOAN MOI ---");
-        System.out.print("ten dang nhap (>=4 ky tu): ");
+        System.out.print("Tên đăng nhập (>=4 ký tự): ");
         String u = scanner.nextLine().trim();
-        System.out.print("Mat khau (>=6 ky tu): ");
+        System.out.print("Mật khẩu (>=6 ký tự): ");
         String p = scanner.nextLine().trim();
-        System.out.print("Ho va ten: ");
+        System.out.print("Họ và tên: ");
         String name = scanner.nextLine().trim();
         System.out.print("Email: ");
         String mail = scanner.nextLine().trim();
-        System.out.print("So đien thoai (10 chu so): ");
+        System.out.print("Số điện thoại (10 chữ số): ");
         String phone = scanner.nextLine().trim();
 
         try {
             Fan f = controller.register(u, p, name, mail, phone);
-            System.out.println("✅ Đang ky thanh cong tai khoan: " + f.getUsername());
+            System.out.println("✅ Đăng ký thành công tài khoản: " + f.getUsername());
+            currentFan = f; // Tự động đăng nhập vào tài khoản vừa tạo
+            System.out.println("🎉 Đã tự động cập nhật đăng nhập: " + f.getFullName());
         } catch (Exception e) {
-            System.out.println("❌ Đăng ky that bai: " + e.getMessage());
+            System.out.println("❌ Đăng ký thất bại: " + e.getMessage());
         }
     }
 
     private void handleLogin() {
-        System.out.println("\n--- ĐANG NHAP HE THONG ---");
-        System.out.print("Ten đang nhap: ");
+        System.out.println("\n--- ĐĂNG NHẬP HỆ THỐNG ---");
+        System.out.print("Tên đăng nhập: ");
         String u = scanner.nextLine().trim();
         System.out.print("Mật khẩu: ");
         String p = scanner.nextLine().trim();
 
         try {
             currentFan = controller.login(u, p);
-            System.out.println("✅ Dang nhap thanh cong, xin chao, " + currentFan.getFullName());
+            System.out.println("✅ Đăng nhập thành công, xin chào: " + currentFan.getFullName());
         } catch (Exception e) {
             System.out.println("❌ " + e.getMessage());
         }
@@ -202,9 +203,9 @@ public class GuestView {
 
         try {
             currentFan = controller.updateProfile(currentFan.getFanId(), name, mail, phone, pass);
-            System.out.println("✅ Cap nhap thanh cong!");
+            System.out.println("✅ Cập nhật thành công!");
         } catch (Exception e) {
-            System.out.println("❌ Cap nhap that bai: " + e.getMessage());
+            System.out.println("❌ Cập nhật thất bại: " + e.getMessage());
         }
     }
 }
