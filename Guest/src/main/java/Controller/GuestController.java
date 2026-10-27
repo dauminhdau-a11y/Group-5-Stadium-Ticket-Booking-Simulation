@@ -22,33 +22,38 @@ public class GuestController {
     // 1. +register(...): Fan
     public Fan register(String username, String password, String fullName, String email, String phone) throws Exception {
         if (username == null || username.trim().length() < 4) {
-            throw new Exception("Username phải có ít nhất 4 ký tự!");
+            throw new Exception("Username phải có ít nhất 4 ký tự (bạn đã nhập: '" + (username == null ? "" : username.trim()) + "')!");
         }
         if (password == null || password.length() < 6) {
-            throw new Exception("Mật khẩu phải từ 6 ký tự trở lên!");
+            throw new Exception("Mật khẩu phải từ 6 ký tự trở lên (bạn đã nhập: " + (password == null ? 0 : password.length()) + " ký tự)!");
         }
         if (fullName == null || fullName.trim().isEmpty()) {
             throw new Exception("Họ và tên không được để trống!");
         }
-        if (email == null || !email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$")) {
-            throw new Exception("Email không đúng định dạng!");
+        if (email == null || !email.trim().matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$")) {
+            throw new Exception("Email không đúng định dạng (bạn đã nhập: '" + email + "')!");
         }
-        if (phone == null || !phone.matches("^0[0-9]{9}$")) {
-            throw new Exception("Số điện thoại phải gồm 10 chữ số (bắt đầu bằng 0)!");
+        final String cleanPhone = phone == null ? "" : phone.replaceAll("\\s+", "").trim();
+        if (!cleanPhone.matches("^0[0-9]{9}$")) {
+            throw new Exception("Số điện thoại phải gồm đúng 10 chữ số bắt đầu bằng 0 (bạn đã nhập: '" + phone + "')!");
         }
+
+        final String cleanUsername = username.trim();
+        final String cleanEmail = email.trim();
+        final String cleanFullName = fullName.trim();
 
         List<Fan> existing = fanRepository.findAll();
-        boolean usernameExists = existing.stream().anyMatch(f -> f.getUsername().equalsIgnoreCase(username.trim()));
-        if (usernameExists) throw new Exception("Tên đăng nhập đã tồn tại!");
+        boolean usernameExists = existing.stream().anyMatch(f -> f.getUsername().equalsIgnoreCase(cleanUsername));
+        if (usernameExists) throw new Exception("Tên đăng nhập '" + cleanUsername + "' đã tồn tại!");
 
-        boolean emailExists = existing.stream().anyMatch(f -> f.getEmail().equalsIgnoreCase(email.trim()));
-        if (emailExists) throw new Exception("Email đã được đăng ký!");
+        boolean emailExists = existing.stream().anyMatch(f -> f.getEmail().equalsIgnoreCase(cleanEmail));
+        if (emailExists) throw new Exception("Email '" + cleanEmail + "' đã được đăng ký trước đó!");
 
         String fanId = "FAN_" + System.currentTimeMillis();
-        Fan newFan = new Fan(fanId, username.trim(), fullName.trim(), email.trim(), phone.trim(), password);
+        Fan newFan = new Fan(fanId, cleanUsername, cleanFullName, cleanEmail, cleanPhone, password);
         boolean saved = fanRepository.save(newFan);
         if (!saved) {
-            throw new Exception("Lỗi: Không thể lưu dữ liệu tài khoản vào hệ thống!");
+            throw new Exception("Lỗi: Không thể lưu dữ liệu tài khoản vào file!");
         }
         return newFan;
     }
@@ -58,8 +63,9 @@ public class GuestController {
         if (u == null || u.trim().isEmpty() || p == null || p.trim().isEmpty()) {
             throw new Exception("Tên đăng nhập và mật khẩu không được để trống!");
         }
+        final String cleanU = u.trim();
         return fanRepository.findAll().stream()
-                .filter(f -> f.getUsername().equalsIgnoreCase(u.trim()) && f.getPassword().equals(p))
+                .filter(f -> f.getUsername().equalsIgnoreCase(cleanU) && f.getPassword().equals(p))
                 .findFirst()
                 .orElseThrow(() -> new Exception("Sai tên đăng nhập hoặc mật khẩu!"));
     }
@@ -73,12 +79,14 @@ public class GuestController {
 
         if (fullName != null && !fullName.trim().isEmpty()) fan.setFullName(fullName.trim());
         if (email != null && !email.trim().isEmpty()) {
-            if (!email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$")) throw new Exception("Email không hợp lệ!");
-            fan.setEmail(email.trim());
+            String trimmedEmail = email.trim();
+            if (!trimmedEmail.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$")) throw new Exception("Email không hợp lệ: " + email);
+            fan.setEmail(trimmedEmail);
         }
         if (phone != null && !phone.trim().isEmpty()) {
-            if (!phone.matches("^0[0-9]{9}$")) throw new Exception("SĐT không hợp lệ!");
-            fan.setPhone(phone.trim());
+            String cleanPhone = phone.replaceAll("\\s+", "").trim();
+            if (!cleanPhone.matches("^0[0-9]{9}$")) throw new Exception("SĐT không hợp lệ: " + phone);
+            fan.setPhone(cleanPhone);
         }
         if (newPassword != null && !newPassword.trim().isEmpty()) {
             if (newPassword.length() < 6) throw new Exception("Mật khẩu mới phải từ 6 ký tự!");

@@ -150,9 +150,9 @@ public class GuestView {
         String p = scanner.nextLine().trim();
         System.out.print("Họ và tên: ");
         String name = scanner.nextLine().trim();
-        System.out.print("Email: ");
+        System.out.print("Email (vd: user@gmail.com): ");
         String mail = scanner.nextLine().trim();
-        System.out.print("Số điện thoại (10 chữ số): ");
+        System.out.print("Số điện thoại (10 chữ số bắt đầu bằng 0, vd: 0912345678): ");
         String phone = scanner.nextLine().trim();
 
         try {
@@ -162,6 +162,7 @@ public class GuestView {
             System.out.println("🎉 Đã tự động cập nhật đăng nhập: " + f.getFullName());
         } catch (Exception e) {
             System.out.println("❌ Đăng ký thất bại: " + e.getMessage());
+            System.out.println("⚠️ Vui lòng kiểm tra lại thông tin nhập để đảm bảo đúng quy định!");
         }
     }
 
