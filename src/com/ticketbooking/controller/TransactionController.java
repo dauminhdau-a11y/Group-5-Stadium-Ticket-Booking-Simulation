@@ -140,7 +140,84 @@ public class TransactionController {
         }).collect(Collectors.toList());
     }
 
+        public static final int HOLD_TIMEOUT_MINUTES = 10;
+
+    public synchronized int releaseExpiredSeats() throws IOException {
+        List<Seat> allSeats = seatRepo.findAll();
+        int releasedCount = 0;
+        for (Seat seat : allSeats) {
+            if (seat.getStatus() == SeatStatus.LOCKED && seat.isHoldExpired(HOLD_TIMEOUT_MINUTES)) {
+                seat.unlock();
+                seatRepo.save(seat);
+                releasedCount++;
+            }
+        }
+        return releasedCount;
+    }
+
+    public synchronized List<Seat> holdSeatsForPayment(String fanId, String matchId, List<String> seatIds) throws IOException {
+        releaseExpiredSeats();
+
+        if (seatIds == null || seatIds.isEmpty()) {
+            throw new IllegalArgumentException("Please enter at least 1 seat ID.");
+        }
+        if (seatIds.size() > 4) {
+            throw new IllegalArgumentException("Transaction limit: You can select at most 4 tickets.");
+        }
+
+        List<Seat> seatsToHold = new ArrayList<>();
+        List<String> uniqueSeatIds = seatIds.stream().distinct().collect(Collectors.toList());
+        if (uniqueSeatIds.size() != seatIds.size()) {
+            throw new IllegalArgumentException("A seat cannot be selected more than once.");
+        }
+
+        for (String seatId : seatIds) {
+            Seat seat = seatRepo.findById(seatId);
+            if (seat == null) {
+                throw new IllegalArgumentException("Seat ID not found: " + seatId);
+            }
+            if (seat.getMatchId() != null && !seat.getMatchId().isEmpty() && !seat.getMatchId().equalsIgnoreCase(matchId)) {
+                throw new IllegalArgumentException("Seat " + seatId + " does not belong to match " + matchId);
+            }
+
+            if (seat.getStatus() == SeatStatus.BOOKED) {
+                throw new IllegalArgumentException("Seat " + seatId + " has already been booked by another customer.");
+            }
+
+            if (seat.getStatus() == SeatStatus.LOCKED) {
+                if (seat.getLockedBy() != null && !seat.getLockedBy().equalsIgnoreCase(fanId)) {
+                    long remSeconds = seat.getRemainingHoldSeconds(HOLD_TIMEOUT_MINUTES);
+                    long remMinutes = remSeconds / 60;
+                    throw new IllegalArgumentException("Ghế " + seatId + " đang bị KHÓA (LOCKED) do có khách hàng khác đang giữ chỗ thanh toán (còn lại ~" + (remMinutes + 1) + " phút). Vui lòng chọn ghế khác!");
+                }
+            }
+
+            seatsToHold.add(seat);
+        }
+
+        for (Seat seat : seatsToHold) {
+            seat.lockForHold(fanId);
+            seatRepo.save(seat);
+        }
+
+        return seatsToHold;
+    }
+
+    public synchronized void cancelHoldSeats(String fanId, List<String> seatIds) throws IOException {
+        if (seatIds == null) return;
+        for (String seatId : seatIds) {
+            Seat seat = seatRepo.findById(seatId);
+            if (seat != null && seat.getStatus() == SeatStatus.LOCKED) {
+                if (seat.getLockedBy() == null || seat.getLockedBy().equalsIgnoreCase(fanId)) {
+                    seat.unlock();
+                    seatRepo.save(seat);
+                }
+            }
+        }
+    }
+
     public List<Seat> getAllSeatsForMatch(String matchId) throws IOException {
+        releaseExpiredSeats();
         return seatRepo.findByCondition(seat -> seat.getMatchId().equalsIgnoreCase(matchId));
     }
 
@@ -150,6 +227,12 @@ public class TransactionController {
     }
 
     public List<Seat> validateAndGetSeats(String matchId, List<String> seatIds) throws IOException {
+        return validateAndGetSeats(null, matchId, seatIds);
+    }
+
+    public List<Seat> validateAndGetSeats(String fanId, String matchId, List<String> seatIds) throws IOException {
+        releaseExpiredSeats();
+
         if (seatIds == null || seatIds.isEmpty()) {
             throw new IllegalArgumentException("Please enter at least 1 seat ID.");
         }
@@ -167,11 +250,18 @@ public class TransactionController {
             if (seat == null) {
                 throw new IllegalArgumentException("Seat ID not found: " + seatId);
             }
-            if (!seat.getMatchId().equalsIgnoreCase(matchId)) {
+            if (seat.getMatchId() != null && !seat.getMatchId().isEmpty() && !seat.getMatchId().equalsIgnoreCase(matchId)) {
                 throw new IllegalArgumentException("Seat " + seatId + " does not belong to match " + matchId);
             }
-            if (seat.getStatus() != SeatStatus.AVAILABLE) {
-                throw new IllegalArgumentException("Seat " + seatId + " is not available.");
+            if (seat.getStatus() == SeatStatus.BOOKED) {
+                throw new IllegalArgumentException("Seat " + seatId + " has already been booked by another customer.");
+            }
+            if (seat.getStatus() == SeatStatus.LOCKED) {
+                if (fanId != null && seat.getLockedBy() != null && !seat.getLockedBy().equalsIgnoreCase(fanId)) {
+                    long remSeconds = seat.getRemainingHoldSeconds(HOLD_TIMEOUT_MINUTES);
+                    long remMinutes = remSeconds / 60;
+                    throw new IllegalArgumentException("Ghế " + seatId + " đang bị KHÓA (LOCKED) do có khách hàng khác đang giữ chỗ thanh toán (còn lại ~" + (remMinutes + 1) + " phút). Vui lòng chọn ghế khác!");
+                }
             }
             seatsForTransaction.add(seat);
         }
@@ -216,7 +306,7 @@ public class TransactionController {
         if (fanId == null || fanId.trim().isEmpty()) {
             throw new IllegalArgumentException("Fan ID is required.");
         }
-        List<Seat> seatsForTransaction = validateAndGetSeats(matchId, seatIds);
+        List<Seat> seatsForTransaction = validateAndGetSeats(fanId, matchId, seatIds);
 
         double subtotal = calculateSubtotal(seatsForTransaction);
         double discount = 0.0;
@@ -232,7 +322,7 @@ public class TransactionController {
         double finalAmount = Math.max(0, subtotal - discount);
 
         for (Seat seat : seatsForTransaction) {
-            seat.setStatus(SeatStatus.BOOKED);
+            seat.confirmBooked();
             seatRepo.save(seat);
 
             String ticketId = "TCK-" + UUID.randomUUID().toString().substring(0, 8);

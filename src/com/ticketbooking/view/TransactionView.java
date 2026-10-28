@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 public class TransactionView {
     private TransactionController transactionController;
     private Scanner scanner;
+    private SeatMapView seatMapView;
 
     public TransactionView(TransactionController transactionController) {
         this(transactionController, new Scanner(System.in));
@@ -28,6 +29,7 @@ public class TransactionView {
         }
         this.transactionController = transactionController;
         this.scanner = scanner;
+        this.seatMapView = new SeatMapView();
     }
 
     public TransactionController getTransactionController() {
@@ -182,7 +184,7 @@ public class TransactionView {
             return;
         }
 
-        renderSeatMap(allSeats);
+        renderSeatMap(matchId, allSeats);
         pause();
     }
 
@@ -200,36 +202,15 @@ public class TransactionView {
         }
     }
 
+    public void renderSeatMap(String matchId, List<Seat> seats) {
+        seatMapView.displaySeatMap(matchId, seats);
+    }
+
     public void renderSeatMap(List<Seat> seats) {
-        System.out.println("\n==========================================================================");
-        System.out.println("                         VISUAL STADIUM SEAT MAP                          ");
-        System.out.println("==========================================================================");
-        System.out.println("                        [ FOOTBALL PITCH / FIELD ]                        ");
-        System.out.println("--------------------------------------------------------------------------");
-
-        for (SeatType type : SeatType.values()) {
-            List<Seat> group = seats.stream()
-                    .filter(s -> s.getSeatType() == type)
-                    .collect(Collectors.toList());
-
-            if (!group.isEmpty()) {
-                System.out.println(">> [" + type.name() + " - " + type.getStandName() + "] (Price: " + String.format("%,.0f VND", type.getBasePrice()) + "):");
-                StringBuilder sb = new StringBuilder("   ");
-                for (Seat s : group) {
-                    String tag = (s.getStatus() == SeatStatus.AVAILABLE) ? "[O]" : "[X]";
-                    sb.append(String.format("%-8s:%s   ", s.getSeatId(), tag));
-                }
-                System.out.println(sb.toString());
-                System.out.println("--------------------------------------------------------------------------");
-            }
-        }
-
-        long availableCount = seats.stream().filter(s -> s.getStatus() == SeatStatus.AVAILABLE).count();
-        long bookedCount = seats.size() - availableCount;
-
-        System.out.println("Legend:     [O] : Available Seat   |   [X] : Booked Seat");
-        System.out.println("Statistics: Total: " + seats.size() + " seats | Available: " + availableCount + " | Booked: " + bookedCount);
-        System.out.println("==========================================================================");
+        String matchId = (seats != null && !seats.isEmpty() && seats.get(0).getMatchId() != null)
+                ? seats.get(0).getMatchId()
+                : "MATCH";
+        renderSeatMap(matchId, seats);
     }
 
     public void showTransactionForm(String fanId) throws IOException {
@@ -260,14 +241,20 @@ public class TransactionView {
 
         List<Seat> validatedSeats;
         try {
-            validatedSeats = transactionController.validateAndGetSeats(matchId, seatIds);
+            validatedSeats = transactionController.holdSeatsForPayment(fanId, matchId, seatIds);
         } catch (Exception e) {
             System.out.println("\n[TRANSACTION ERROR]: " + e.getMessage());
             return;
         }
 
+        System.out.println("\n>> [GIU CHO THANH CONG]: He thong da TAM GIU " + validatedSeats.size()
+                + " ghe cho ban trong 10 PHUT (den "
+                + java.time.LocalTime.now().plusMinutes(10).format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss"))
+                + ")!");
+        System.out.println(">> Luu y: Trong thoi gian nay, khach hang khac se khong the dat cac ghe nay (he thong bao LOCKED).");
+
         System.out.println("\n-----------------------------------------------------------------------------------------");
-        System.out.println("SELECTED TICKETS BREAKDOWN:");
+        System.out.println("SELECTED TICKETS BREAKDOWN (HOLDING FOR 10 MINUTES):");
         for (Seat s : validatedSeats) {
             System.out.printf(" - Seat: %-8s | Zone: %-10s | %-24s | Price: %s%n",
                     s.getSeatId(),
@@ -321,15 +308,21 @@ public class TransactionView {
 
         System.out.println("\n-----------------------------------------------------------------------------------------");
         System.out.println("ONLINE PAYMENT GATEWAY (QR CODE):");
-        System.out.println("Online transactions require payment via Bank QR Code transfer.");
-        System.out.print("Press [Enter] to display QR Code for payment (or type '0' to cancel): ");
+        System.out.println("Online transactions require payment via Bank QR Code transfer within 10 minutes.");
+        System.out.print("Press [Enter] to display QR Code for payment (or type '0' to cancel and unlock seats): ");
         String confirm = scanner.nextLine().trim();
         if ("0".equals(confirm)) {
-            System.out.println("\n>> Transaction cancelled.");
+            transactionController.cancelHoldSeats(fanId, seatIds);
+            System.out.println("\n>> Giao dich da huy. Cac ghe da duoc giai phong (AVAILABLE) lai cho khach hang khac.");
             return;
         }
 
-        showQrPaymentScreen(fanId, matchId, finalAmount);
+        boolean paid = showQrPaymentScreen(fanId, matchId, finalAmount);
+        if (!paid) {
+            transactionController.cancelHoldSeats(fanId, seatIds);
+            System.out.println("\n>> Da huy thanh toan tai cong QR. Cac ghe da duoc mo khoa lai thanh AVAILABLE.");
+            return;
+        }
 
         try {
             System.out.println("\nProcessing and finalizing your transaction...");
@@ -339,10 +332,11 @@ public class TransactionView {
             printTransactionResult(transaction, subtotal);
         } catch (Exception e) {
             System.out.println("[TRANSACTION ERROR]: " + e.getMessage());
+            transactionController.cancelHoldSeats(fanId, seatIds);
         }
     }
 
-    public void showQrPaymentScreen(String fanId, String matchId, double amount) {
+    public boolean showQrPaymentScreen(String fanId, String matchId, double amount) {
         System.out.println("\n=============================================================");
         System.out.println("             ONLINE QR PAYMENT GATEWAY - SELLER              ");
         System.out.println("=============================================================");
@@ -358,9 +352,13 @@ public class TransactionView {
         System.out.println("  +---------------------------------------------------------+");
         System.out.println("  Payment details have been automatically dispatched to Seller.");
         System.out.println("-------------------------------------------------------------");
-        System.out.print(">> Press [Enter] once you have completed the bank transfer: ");
-        scanner.nextLine();
+        System.out.print(">> Press [Enter] once completed (or type '0' to cancel): ");
+        String confirm = scanner.nextLine().trim();
+        if ("0".equals(confirm)) {
+            return false;
+        }
         System.out.println(">> Verifying transaction... [Success: Payment confirmed by Seller!]");
+        return true;
     }
 
     public void printTransactionResult(Transaction transaction, double subtotal) {
