@@ -21,6 +21,7 @@
 
 **1. Chức năng dành cho Fan**
 * Đăng xuất hệ thống.
+* Xem và chỉnh sửa các thông tin cá nhân
 * Xem danh sách trận đấu; hỗ trợ lọc theo ngày, sân vận động, đội bóng (hiển thị trạng thái "Hết vé" đối với các trận đã sold out).
 * Xem danh sách khán đài kèm bảng giá vé (tích hợp sơ đồ đánh dấu trạng thái ghế đã đặt/chưa đặt).
 * Đặt mua vé: 
