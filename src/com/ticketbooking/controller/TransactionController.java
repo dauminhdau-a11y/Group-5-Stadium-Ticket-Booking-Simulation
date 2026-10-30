@@ -188,7 +188,7 @@ public class TransactionController {
                 if (seat.getLockedBy() != null && !seat.getLockedBy().equalsIgnoreCase(fanId)) {
                     long remSeconds = seat.getRemainingHoldSeconds(HOLD_TIMEOUT_MINUTES);
                     long remMinutes = remSeconds / 60;
-                    throw new IllegalArgumentException("Ghế " + seatId + " đang bị KHÓA (LOCKED) do có khách hàng khác đang giữ chỗ thanh toán (còn lại ~" + (remMinutes + 1) + " phút). Vui lòng chọn ghế khác!");
+                    throw new IllegalArgumentException("Seat " + seatId + " is currently LOCKED by another customer for checkout (~" + (remMinutes + 1) + " minute(s) remaining). Please choose another seat!");
                 }
             }
 
@@ -260,7 +260,7 @@ public class TransactionController {
                 if (fanId != null && seat.getLockedBy() != null && !seat.getLockedBy().equalsIgnoreCase(fanId)) {
                     long remSeconds = seat.getRemainingHoldSeconds(HOLD_TIMEOUT_MINUTES);
                     long remMinutes = remSeconds / 60;
-                    throw new IllegalArgumentException("Ghế " + seatId + " đang bị KHÓA (LOCKED) do có khách hàng khác đang giữ chỗ thanh toán (còn lại ~" + (remMinutes + 1) + " phút). Vui lòng chọn ghế khác!");
+                    throw new IllegalArgumentException("Seat " + seatId + " is currently LOCKED by another customer for checkout (~" + (remMinutes + 1) + " minute(s) remaining). Please choose another seat!");
                 }
             }
             seatsForTransaction.add(seat);

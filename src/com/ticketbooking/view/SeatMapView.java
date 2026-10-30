@@ -21,17 +21,17 @@ public class SeatMapView {
             return;
         }
 
-        // 1. Phía Bắc (Trên cùng): Khán đài B (Standard)
+        // 1. North Stand (Top): Stand B (Standard)
         List<Seat> standB = seats.stream()
                 .filter(s -> s.getSeatType() == SeatType.STANDARD)
                 .collect(Collectors.toList());
-        System.out.println("\n                                        NORTH / PHÍA BẮC                                                 ");
-        System.out.println("                       [ KHÁN ĐÀI B (STAND B - STANDARD) | Giá: 500,000 VND ]                            ");
+        System.out.println("\n                                              NORTH STAND                                                ");
+        System.out.println("                             [ STAND B (STANDARD) | Price: 500,000 VND ]                                 ");
         System.out.println("+-------------------------------------------------------------------------------------------------------+");
         renderSeatRow(standB, 8);
         System.out.println("+-------------------------------------------------------------------------------------------------------+");
 
-        // 2. Hai bên cánh: Khán đài C (Phía Tây) và Khán đài D (Phía Đông) bao quanh sân bóng ở giữa
+        // 2. West & East Wings: Stand C (West) and Stand D (East) surrounding football pitch in the center
         List<Seat> standC = seats.stream()
                 .filter(s -> s.getSeatId().startsWith("C"))
                 .collect(Collectors.toList());
@@ -39,8 +39,8 @@ public class SeatMapView {
                 .filter(s -> s.getSeatId().startsWith("D") || (s.getSeatType() == SeatType.ECONOMY && !s.getSeatId().startsWith("C")))
                 .collect(Collectors.toList());
 
-        System.out.println("\n  KHÁN ĐÀI C (TÂY - ECONOMY)      |                     SÂN THI ĐẤU                     |    KHÁN ĐÀI D (ĐÔNG - ECONOMY)   ");
-        System.out.println("   (Sau cầu môn 1 - 250k)         |                  [ FOOTBALL PITCH ]                 |     (Sau cầu môn 2 - 250k)       ");
+        System.out.println("\n      STAND C (WEST - ECONOMY)    |                     PITCH FIELD                     |    STAND D (EAST - ECONOMY)      ");
+        System.out.println("       (Behind Goal 1 - 250k)     |                  [ FOOTBALL PITCH ]                 |     (Behind Goal 2 - 250k)       ");
         System.out.println("----------------------------------+-----------------------------------------------------+----------------------------------");
 
         int maxSideRows = Math.max(4, Math.max((standC.size() + 1) / 2, (standD.size() + 1) / 2));
@@ -53,7 +53,7 @@ public class SeatMapView {
             } else if (row == 1) {
                 System.out.printf("  %-32s|  [G1] |  [GOAL 1]           (o)        [GOAL 2] | [G2]|  %-32s%n", cText, dText);
             } else if (row == 2) {
-                System.out.printf("  %-32s|       |   Cầu môn 1      Vòng tròn    Cầu môn 2 |   |  %-32s%n", cText, dText);
+                System.out.printf("  %-32s|       |    Goal 1        Center Circle     Goal 2 |   |  %-32s%n", cText, dText);
             } else if (row == 3) {
                 System.out.printf("  %-32s|       +-----------------------------------------+   |  %-32s%n", cText, dText);
             } else {
@@ -61,7 +61,7 @@ public class SeatMapView {
             }
         }
 
-        // 3. Phía Nam (Dưới cùng): Khán đài A (VIP Lounge & VIP Zone)
+        // 3. South Stand (Bottom): Stand A (VVIP Lounge & VIP Zone)
         List<Seat> standA_VVIP = seats.stream()
                 .filter(s -> s.getSeatType() == SeatType.VVIP)
                 .collect(Collectors.toList());
@@ -70,8 +70,8 @@ public class SeatMapView {
                 .collect(Collectors.toList());
 
         System.out.println("+-------------------------------------------------------------------------------------------------------+");
-        System.out.println("                 [ KHÁN ĐÀI A (STAND A - VVIP & VIP LOUNGE) | Giá: 1,000,000 - 1,800,000 VND ]          ");
-        System.out.println("                                        SOUTH / PHÍA NAM (VIP)                                           ");
+        System.out.println("                        [ STAND A (VVIP & VIP LOUNGE) | Price: 1,000,000 - 1,800,000 VND ]              ");
+        System.out.println("                                              SOUTH STAND (VIP)                                                 ");
         System.out.println("+-------------------------------------------------------------------------------------------------------+");
         System.out.print("  >> [VVIP Lounge]: ");
         for (Seat s : standA_VVIP) {
@@ -85,7 +85,7 @@ public class SeatMapView {
         long lockedCount = seats.stream().filter(s -> s.getStatus() == SeatStatus.LOCKED).count();
         long bookedCount = seats.stream().filter(s -> s.getStatus() == SeatStatus.BOOKED).count();
 
-        System.out.println("\nLegend:     [O] : AVAILABLE (Còn trống)   |   [L] : LOCKED (Đang giữ chỗ 10p)   |   [X] : BOOKED (Đã bán)");
+        System.out.println("\nLegend:     [O] : AVAILABLE   |   [L] : LOCKED (Holding 10 min)   |   [X] : BOOKED");
         System.out.printf("Statistics: Total: %d seats | Available: %d | Locked (Holding): %d | Booked: %d%n",
                 seats.size(), availableCount, lockedCount, bookedCount);
         System.out.println("=========================================================================================================\n");
@@ -112,7 +112,7 @@ public class SeatMapView {
                 }
                 int remaining = seats.size() - count;
                 if (remaining > 0) {
-                    System.out.println("   ... [Còn " + remaining + " ghế nữa trong khán đài]");
+                    System.out.println("   ... [" + remaining + " more seats in this stand]");
                 }
                 return;
             }

@@ -56,7 +56,7 @@ public class FanView {
             System.out.println("2. Update profile");
             System.out.println("3. View seat map");
             System.out.println("4. Book tickets");
-            System.out.println("5. Check / Verify voucher (Kiem tra ma giam gia)");
+            System.out.println("5. Check / Verify voucher");
             System.out.println("6. View booking history");
             System.out.println("7. Refund ticket");
             System.out.println("8. Receive notifications");

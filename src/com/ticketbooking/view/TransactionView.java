@@ -247,11 +247,11 @@ public class TransactionView {
             return;
         }
 
-        System.out.println("\n>> [GIU CHO THANH CONG]: He thong da TAM GIU " + validatedSeats.size()
-                + " ghe cho ban trong 10 PHUT (den "
+        System.out.println("\n>> [HOLD SUCCESSFUL]: The system has RESERVED " + validatedSeats.size()
+                + " seat(s) for 10 MINUTES (until "
                 + java.time.LocalTime.now().plusMinutes(10).format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss"))
                 + ")!");
-        System.out.println(">> Luu y: Trong thoi gian nay, khach hang khac se khong the dat cac ghe nay (he thong bao LOCKED).");
+        System.out.println(">> Notice: During this time, other customers cannot select these seats (marked as LOCKED).");
 
         System.out.println("\n-----------------------------------------------------------------------------------------");
         System.out.println("SELECTED TICKETS BREAKDOWN (HOLDING FOR 10 MINUTES):");
@@ -313,14 +313,14 @@ public class TransactionView {
         String confirm = scanner.nextLine().trim();
         if ("0".equals(confirm)) {
             transactionController.cancelHoldSeats(fanId, seatIds);
-            System.out.println("\n>> Giao dich da huy. Cac ghe da duoc giai phong (AVAILABLE) lai cho khach hang khac.");
+            System.out.println("\n>> Transaction cancelled. Selected seats have been released back to AVAILABLE.");
             return;
         }
 
         boolean paid = showQrPaymentScreen(fanId, matchId, finalAmount);
         if (!paid) {
             transactionController.cancelHoldSeats(fanId, seatIds);
-            System.out.println("\n>> Da huy thanh toan tai cong QR. Cac ghe da duoc mo khoa lai thanh AVAILABLE.");
+            System.out.println("\n>> Payment cancelled at QR gateway. Selected seats have been unlocked and returned to AVAILABLE.");
             return;
         }
 
