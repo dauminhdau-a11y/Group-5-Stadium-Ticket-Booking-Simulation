@@ -209,11 +209,6 @@ public class AuthView {
 
         try {
             Account account = authController.login(username.trim(), password);
-            if (account == null) {
-                System.out.println("[LOGIN ERROR]: Invalid username or password.");
-                return true;
-            }
-
             System.out.println("\nLogin successful! Welcome, " + account.getUsername() + " (" + account.getRole() + ")");
 
             if (account.getRole() == Role.FAN) {

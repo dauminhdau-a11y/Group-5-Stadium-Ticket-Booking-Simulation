@@ -33,13 +33,6 @@ public class TicketRepository extends CsvRepository<Ticket> {
             TicketStatus status = TicketStatus.valueOf(parts[5].trim());
             String bookingDate = parts[6].trim();
             return new Ticket(ticketId, matchId, seatId, fanId, price, status, bookingDate);
-        } else if (parts.length == 6 && isTicketStatus(parts[5])) {
-            String ticketId = parts[0].trim();
-            String transactionId = parts[1].trim();
-            String seatId = parts[2].trim();
-            String matchId = parts[3].trim();
-            double price = Double.parseDouble(parts[4].trim());
-            return new Ticket(ticketId, transactionId, seatId, matchId, price, parts[5].trim());
         } else if (parts.length >= 6) {
             String ticketId = parts[0].trim();
             String matchId = parts[1].trim();
