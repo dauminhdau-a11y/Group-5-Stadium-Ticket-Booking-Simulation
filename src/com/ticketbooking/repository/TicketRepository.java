@@ -23,9 +23,42 @@ public class TicketRepository extends CsvRepository<Ticket> {
 
     @Override
     public Ticket parseLine(String line) {
-        Ticket ticket = new Ticket();
-        ticket.fromCsvLine(line);
-        return ticket;
+        String[] parts = line.split(",", -1);
+        if (parts.length >= 7) {
+            String ticketId = parts[0].trim();
+            String matchId = parts[1].trim();
+            String seatId = parts[2].trim();
+            String fanId = parts[3].trim();
+            double price = Double.parseDouble(parts[4].trim());
+            TicketStatus status = TicketStatus.valueOf(parts[5].trim());
+            String bookingDate = parts[6].trim();
+            return new Ticket(ticketId, matchId, seatId, fanId, price, status, bookingDate);
+        } else if (parts.length >= 6) {
+            String ticketId = parts[0].trim();
+            String matchId = parts[1].trim();
+            String seatId = parts[2].trim();
+            double price = Double.parseDouble(parts[3].trim());
+            TicketStatus status = TicketStatus.valueOf(parts[4].trim());
+            String bookingDate = parts[5].trim();
+            return new Ticket(ticketId, matchId, seatId, price, status, bookingDate);
+        } else if (parts.length >= 5) {
+            String ticketId = parts[0].trim();
+            String matchId = parts[1].trim();
+            String seatId = parts[2].trim();
+            double price = Double.parseDouble(parts[3].trim());
+            TicketStatus status = TicketStatus.valueOf(parts[4].trim());
+            return new Ticket(ticketId, matchId, seatId, price, status);
+        }
+        return new Ticket(parts[0].trim(), "", "", 0.0, TicketStatus.AVAILABLE);
+    }
+
+    private boolean isTicketStatus(String value) {
+        for (TicketStatus status : TicketStatus.values()) {
+            if (status.name().equalsIgnoreCase(value.trim())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public List<Ticket> findByMatchId(String matchId) throws IOException {

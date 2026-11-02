@@ -196,33 +196,6 @@ public class AuthView {
 
     public boolean loginUser() {
         System.out.println("\n--- LOGIN ---");
-        System.out.println("Select account role:");
-        System.out.println("1. Fan");
-        System.out.println("2. Staff");
-        System.out.println("3. Admin");
-        System.out.println("0. Back");
-        System.out.print("Choose role (0-3): ");
-        String roleChoice = readLine();
-        if (roleChoice == null || "0".equals(roleChoice.trim())) {
-            return true;
-        }
-
-        Role selectedRole;
-        switch (roleChoice.trim()) {
-            case "1":
-                selectedRole = Role.FAN;
-                break;
-            case "2":
-                selectedRole = Role.STAFF;
-                break;
-            case "3":
-                selectedRole = Role.ADMIN;
-                break;
-            default:
-                System.out.println("Invalid role. Please select Fan, Staff, or Admin.");
-                return true;
-        }
-
         System.out.print("Username: ");
         String username = readLine();
         if (username == null) {
@@ -235,7 +208,7 @@ public class AuthView {
         }
 
         try {
-            Account account = authController.login(username.trim(), password, selectedRole);
+            Account account = authController.login(username.trim(), password);
             System.out.println("\nLogin successful! Welcome, " + account.getUsername() + " (" + account.getRole() + ")");
 
             if (account.getRole() == Role.FAN) {

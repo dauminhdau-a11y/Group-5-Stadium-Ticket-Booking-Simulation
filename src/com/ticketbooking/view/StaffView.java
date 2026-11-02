@@ -175,6 +175,8 @@ public class StaffView {
     }
 
     public void confirmTicketRefund() throws IOException {
+        System.out.println("Refunds are accepted only at least 12 hours before kick-off.");
+        System.out.println("The refund deadline is the scheduled kick-off time minus 12 hours.");
         System.out.print("Enter Ticket ID to confirm refund: ");
         String ticketId = readLine();
         if (ticketId == null || ticketId.trim().isEmpty()) {
@@ -184,7 +186,8 @@ public class StaffView {
         if (ok) {
             System.out.println("Ticket " + ticketId.trim() + " refund confirmed and seat released.");
         } else {
-            System.out.println("Ticket not found or already refunded.");
+            System.out.println("Refund not processed: ticket not found, already refunded, outside the refund period, "
+                    + "or match schedule unavailable.");
         }
     }
 
