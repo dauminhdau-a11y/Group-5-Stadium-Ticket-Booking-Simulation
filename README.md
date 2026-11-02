@@ -46,7 +46,10 @@ CSV Staff/Admin dùng các cột
   * Hỗ trợ giá vé khác nhau theo từng hạng ghế.
   * Giới hạn giao dịch: Tối đa 4 vé/lần.
   * Thanh toán qua mã QR (thông tin thanh toán sẽ được gửi về Seller, có hỗ trợ vé offline).
-* Trả lại vé (Điều kiện: Phải thực hiện trước trận đấu ít nhất 12 tiếng).
+* Trả lại vé: được hoàn toàn bộ số tiền đã thanh toán nếu giao dịch đã xác nhận và
+  yêu cầu được gửi ít nhất 12 tiếng trước giờ bắt đầu trận đấu. Hạn cuối được tính
+  bằng giờ bắt đầu trận đấu trừ 12 tiếng; sau hạn này (kể cả khi trận đã bắt đầu)
+  hệ thống từ chối refund.
 * Nhận thông báo khi trận đấu sắp diễn ra.
 * Áp dụng voucher giảm giá (Giới hạn sử dụng 1 lần/voucher).
 * Thêm trận đấu vào danh sách yêu thích (Wishlist).

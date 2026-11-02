@@ -231,17 +231,28 @@ public class FanView {
     }
 
     public void refundTicket(TransactionController transactionController) {
+        System.out.println("\n=== TICKET REFUND POLICY ===");
+        System.out.println("- The full amount paid is refunded when eligible.");
+        System.out.println("- Submit the request at least 12 hours before the match starts.");
+        System.out.println("- The deadline is the scheduled kick-off time minus 12 hours.");
+        System.out.println("- Requests after the deadline, including after kick-off, are rejected.");
+        System.out.println("- Only paid and confirmed transactions can be refunded.");
         System.out.print("Enter Transaction ID to refund: ");
         String txnId = readLine();
         if (txnId == null || txnId.trim().isEmpty()) {
             return;
         }
         try {
-            boolean success = transactionController.refundTransaction(txnId.trim());
-            if (success) {
-                System.out.println("Transaction " + txnId.trim() + " refunded successfully. Seats are released.");
+            TransactionController.RefundResult result =
+                    transactionController.refundTransactionDetailed(txnId.trim());
+            if (result.isSuccessful()) {
+                System.out.println("Transaction " + txnId.trim() + " refunded successfully.");
+                System.out.println(result.getMessage());
+                System.out.println("Refund amount: "
+                        + String.format("%,.0f VND", result.getRefundAmount()));
+                System.out.println("The seats have been released.");
             } else {
-                System.out.println("Could not refund transaction. Please check Transaction ID or status.");
+                System.out.println("Refund could not be processed: " + result.getMessage());
             }
         } catch (IOException e) {
             System.out.println("Unable to process refund: " + e.getMessage());

@@ -16,14 +16,40 @@ import com.ticketbooking.repository.SeatRepository;
 import com.ticketbooking.repository.TicketRepository;
 import com.ticketbooking.repository.TransactionRepository;
 import com.ticketbooking.repository.VoucherRepository;
+import com.ticketbooking.util.RefundPolicy;
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class TransactionController {
+    public static class RefundResult {
+        private final boolean successful;
+        private final String message;
+        private final double refundAmount;
+
+        private RefundResult(boolean successful, String message, double refundAmount) {
+            this.successful = successful;
+            this.message = message;
+            this.refundAmount = refundAmount;
+        }
+
+        public boolean isSuccessful() {
+            return successful;
+        }
+
+        public String getMessage() {
+            return message;
+        }
+
+        public double getRefundAmount() {
+            return refundAmount;
+        }
+    }
+
     private SyncMechanism mechanism;
     private CsvRepository<Seat> seatRepo;
     private CsvRepository<Transaction> transactionRepo;
@@ -291,10 +317,41 @@ public class TransactionController {
     }
 
     public boolean refundTransaction(String transactionId) throws IOException {
+        return refundTransactionDetailed(transactionId).isSuccessful();
+    }
+
+    public RefundResult refundTransactionDetailed(String transactionId) throws IOException {
         Transaction txn = transactionRepo.findById(transactionId);
-        if (txn == null || txn.getStatus() == TransactionStatus.REFUNDED) {
-            return false;
+        if (txn == null) {
+            return new RefundResult(false, "Transaction not found.", 0.0);
         }
+        if (txn.getStatus() == TransactionStatus.REFUNDED) {
+            return new RefundResult(false, "This transaction has already been refunded.", 0.0);
+        }
+        if (txn.getStatus() != TransactionStatus.CONFIRMED
+                && txn.getStatus() != TransactionStatus.SUCCESS) {
+            return new RefundResult(false, "Only paid and confirmed transactions can be refunded.", 0.0);
+        }
+
+        Match match = matchRepo.findById(txn.getMatchId());
+        LocalDateTime kickoff;
+        LocalDateTime refundDeadline;
+        try {
+            kickoff = RefundPolicy.getKickoff(match);
+            refundDeadline = kickoff.minusHours(RefundPolicy.MIN_HOURS_BEFORE_KICKOFF);
+        } catch (IllegalArgumentException e) {
+            return new RefundResult(false, e.getMessage(), 0.0);
+        }
+
+        String formattedDeadline = refundDeadline.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+        String formattedKickoff = kickoff.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+        if (LocalDateTime.now().isAfter(refundDeadline)) {
+            return new RefundResult(false,
+                    "Refund deadline was " + formattedDeadline + " (12 hours before kick-off at "
+                            + formattedKickoff + "). The refund period has closed.",
+                    0.0);
+        }
+
         txn.setStatus(TransactionStatus.REFUNDED);
         transactionRepo.save(txn);
 
@@ -310,7 +367,10 @@ public class TransactionController {
                 ticketRepo.save(ticket);
             }
         }
-        return true;
+        return new RefundResult(true,
+                "Refund approved. The full paid amount will be refunded. Refund deadline: "
+                        + formattedDeadline + " (12 hours before kick-off).",
+                txn.getTotalAmount());
     }
 
     public boolean confirmReservationPayment(String transactionId) throws IOException {

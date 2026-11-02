@@ -33,6 +33,13 @@ public class TicketRepository extends CsvRepository<Ticket> {
             TicketStatus status = TicketStatus.valueOf(parts[5].trim());
             String bookingDate = parts[6].trim();
             return new Ticket(ticketId, matchId, seatId, fanId, price, status, bookingDate);
+        } else if (parts.length == 6 && isTicketStatus(parts[5])) {
+            String ticketId = parts[0].trim();
+            String transactionId = parts[1].trim();
+            String seatId = parts[2].trim();
+            String matchId = parts[3].trim();
+            double price = Double.parseDouble(parts[4].trim());
+            return new Ticket(ticketId, transactionId, seatId, matchId, price, parts[5].trim());
         } else if (parts.length >= 6) {
             String ticketId = parts[0].trim();
             String matchId = parts[1].trim();
@@ -50,6 +57,15 @@ public class TicketRepository extends CsvRepository<Ticket> {
             return new Ticket(ticketId, matchId, seatId, price, status);
         }
         return new Ticket(parts[0].trim(), "", "", 0.0, TicketStatus.AVAILABLE);
+    }
+
+    private boolean isTicketStatus(String value) {
+        for (TicketStatus status : TicketStatus.values()) {
+            if (status.name().equalsIgnoreCase(value.trim())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public List<Ticket> findByMatchId(String matchId) throws IOException {

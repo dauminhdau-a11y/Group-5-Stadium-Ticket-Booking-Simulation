@@ -13,6 +13,7 @@ import com.ticketbooking.repository.SeatRepository;
 import com.ticketbooking.repository.SupportRequestRepository;
 import com.ticketbooking.repository.TicketRepository;
 import com.ticketbooking.repository.TransactionRepository;
+import com.ticketbooking.util.RefundPolicy;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -155,6 +156,13 @@ public class StaffController {
     public boolean confirmTicketRefund(String ticketId) throws IOException {
         Ticket ticket = ticketRepo.findById(ticketId);
         if (ticket == null || ticket.getStatus() == TicketStatus.REFUNDED) {
+            return false;
+        }
+        try {
+            if (!RefundPolicy.isRefundAllowed(matchRepo.findById(ticket.getMatchId()), LocalDateTime.now())) {
+                return false;
+            }
+        } catch (IllegalArgumentException e) {
             return false;
         }
         ticket.setStatus(TicketStatus.REFUNDED);
