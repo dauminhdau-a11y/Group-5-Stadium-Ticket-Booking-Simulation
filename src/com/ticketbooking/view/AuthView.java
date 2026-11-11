@@ -4,13 +4,7 @@ import com.ticketbooking.controller.AccountController;
 import com.ticketbooking.controller.AdminController;
 import com.ticketbooking.controller.AuthController;
 import com.ticketbooking.controller.MatchController;
-import com.ticketbooking.controller.ReportController;
-import com.ticketbooking.controller.SeatController;
-import com.ticketbooking.controller.SectionController;
-import com.ticketbooking.controller.SimulatorController;
-import com.ticketbooking.controller.StadiumController;
 import com.ticketbooking.controller.StaffController;
-import com.ticketbooking.controller.TicketController;
 import com.ticketbooking.controller.TransactionController;
 import com.ticketbooking.controller.VoucherController;
 import com.ticketbooking.exception.AccountLockedException;
@@ -33,59 +27,35 @@ public class AuthView {
     private AuthController authController;
     private AccountController accountController;
     private MatchController matchController;
-    private StadiumController stadiumController;
-    private SectionController sectionController;
-    private SeatController seatController;
-    private TicketController ticketController;
     private VoucherController voucherController;
     private TransactionController transactionController;
-    private StaffController staffController;
-    private AdminController adminController;
-    private SimulatorController simulatorController;
-    private ReportController reportController;
 
     private FanView fanView;
     private StaffView staffView;
     private AdminView adminView;
     private MatchView matchView;
     private TransactionView transactionView;
-    private AccountView accountView;
 
     public AuthView(Scanner scanner,
             AuthController authController,
             AccountController accountController,
             MatchController matchController,
-            StadiumController stadiumController,
-            SectionController sectionController,
-            SeatController seatController,
-            TicketController ticketController,
             VoucherController voucherController,
             TransactionController transactionController,
             StaffController staffController,
-            AdminController adminController,
-            SimulatorController simulatorController,
-            ReportController reportController) {
+            AdminController adminController) {
         this.scanner = scanner;
         this.authController = authController;
         this.accountController = accountController;
         this.matchController = matchController;
-        this.stadiumController = stadiumController;
-        this.sectionController = sectionController;
-        this.seatController = seatController;
-        this.ticketController = ticketController;
         this.voucherController = voucherController;
         this.transactionController = transactionController;
-        this.staffController = staffController;
-        this.adminController = adminController;
-        this.simulatorController = simulatorController;
-        this.reportController = reportController;
 
         this.fanView = new FanView(scanner);
         this.staffView = new StaffView(staffController, scanner);
         this.adminView = new AdminView(adminController, scanner);
         this.matchView = new MatchView(matchController, scanner);
         this.transactionView = new TransactionView(transactionController, scanner);
-        this.accountView = accountController.getAccountView();
     }
 
     public Scanner getScanner() {

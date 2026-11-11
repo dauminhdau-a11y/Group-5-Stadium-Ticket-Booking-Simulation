@@ -4,7 +4,6 @@ import com.ticketbooking.model.Ticket;
 import com.ticketbooking.model.enums.TicketStatus;
 import com.ticketbooking.repository.TicketRepository;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 public class TicketController {

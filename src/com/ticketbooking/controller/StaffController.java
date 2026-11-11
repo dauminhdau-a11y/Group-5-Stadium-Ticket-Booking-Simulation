@@ -1,6 +1,5 @@
 package com.ticketbooking.controller;
 
-import com.ticketbooking.model.Match;
 import com.ticketbooking.model.Seat;
 import com.ticketbooking.model.Ticket;
 import com.ticketbooking.model.Transaction;

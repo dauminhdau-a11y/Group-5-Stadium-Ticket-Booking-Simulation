@@ -3,7 +3,6 @@ package com.ticketbooking.controller;
 import com.ticketbooking.model.Seat;
 import com.ticketbooking.model.SimulationResult;
 import com.ticketbooking.model.Transaction;
-import com.ticketbooking.model.enums.SeatStatus;
 import com.ticketbooking.model.enums.SyncMechanism;
 import com.ticketbooking.model.enums.TransactionStatus;
 import com.ticketbooking.repository.SeatRepository;

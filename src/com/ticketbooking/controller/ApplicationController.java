@@ -69,16 +69,10 @@ public class ApplicationController {
                 authController,
                 accountController,
                 matchController,
-                stadiumController,
-                sectionController,
-                seatController,
-                ticketController,
                 voucherController,
                 transactionController,
                 staffController,
-                adminController,
-                simulatorController,
-                reportController);
+                adminController);
         authView.run();
     }
 }

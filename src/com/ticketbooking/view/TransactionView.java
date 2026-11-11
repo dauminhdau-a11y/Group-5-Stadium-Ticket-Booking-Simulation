@@ -6,13 +6,11 @@ import com.ticketbooking.model.Seat;
 import com.ticketbooking.model.Transaction;
 import com.ticketbooking.model.Voucher;
 import com.ticketbooking.model.enums.PaymentMethod;
-import com.ticketbooking.model.enums.SeatStatus;
 import com.ticketbooking.model.enums.SeatType;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
-import java.util.stream.Collectors;
 
 public class TransactionView {
     private TransactionController transactionController;

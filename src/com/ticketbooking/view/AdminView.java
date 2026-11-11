@@ -12,7 +12,6 @@ import com.ticketbooking.model.Staff;
 import com.ticketbooking.model.Ticket;
 import com.ticketbooking.model.Transaction;
 import com.ticketbooking.model.Voucher;
-import com.ticketbooking.model.enums.MatchStatus;
 import com.ticketbooking.model.enums.SeatStatus;
 import com.ticketbooking.model.enums.SeatType;
 import com.ticketbooking.model.enums.SectionType;
@@ -20,7 +19,6 @@ import com.ticketbooking.model.enums.SyncMechanism;
 import com.ticketbooking.model.enums.TicketStatus;
 import java.io.IOException;
 import java.time.LocalDate;
-import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Scanner;
 
