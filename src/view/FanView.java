@@ -170,8 +170,6 @@ public class FanView {
             System.out.println("Phone:          " + valueOrDefault(profile.getPhone()));
             System.out.println("Date of birth:  " + valueOrDefault(
                     profile.getDateOfBirth() == null ? null : profile.getDateOfBirth().toString()));
-            System.out.println("Loyalty points: " + profile.getLoyaltyPoints());
-            System.out.println("Membership:     " + profile.getMembershipLevel());
         } catch (IOException | IllegalArgumentException e) {
             System.out.println("Unable to load profile: " + e.getMessage());
         }

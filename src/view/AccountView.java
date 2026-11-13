@@ -107,8 +107,6 @@ public class AccountView {
             System.out.println("Phone: " + valueOrDash(fan.getPhone()));
             System.out.println("Date of birth: " + valueOrDash(
                     fan.getDateOfBirth() == null ? null : fan.getDateOfBirth().toString()));
-            System.out.println("Loyalty points: " + fan.getLoyaltyPoints());
-            System.out.println("Membership: " + fan.getMembershipLevel());
         }
     }
 
