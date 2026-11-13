@@ -117,8 +117,9 @@ public class AccountView {
         System.out.println("3. View account profile");
         System.out.println("4. Create fan/staff account");
         System.out.println("5. Lock fan account");
-        System.out.println("6. Remove account");
-        System.out.println("7. Update fan profile");
+        System.out.println("6. Unlock fan account");
+        System.out.println("7. Remove account");
+        System.out.println("8. Update fan profile");
         System.out.println("0. Back");
         System.out.print("Choose: ");
         String choice = readLine();
@@ -187,6 +188,14 @@ public class AccountView {
                         }
                         break;
                     case 6:
+                        System.out.print("Fan ID to unlock: ");
+                        String unlockFanId = readLine();
+                        if (unlockFanId != null) {
+                            controller.unlockFanAccount(unlockFanId);
+                            System.out.println("Fan account unlocked.");
+                        }
+                        break;
+                    case 7:
                         System.out.print("Account ID to remove: ");
                         String accountId = readLine();
                         if (accountId != null) {
@@ -194,7 +203,7 @@ public class AccountView {
                                      ? "Account removed." : "Account was not found.");
                         }
                         break;
-                    case 7:
+                    case 8:
                         updateFanProfile(controller);
                         break;
                     case 0:

@@ -65,7 +65,7 @@ public class AdminView {
             System.out.println("5. Manage seat");
             System.out.println("6. Manage ticket");
             System.out.println("7. Manage voucher");
-            System.out.println("8. Simulation & data");
+            System.out.println("8. Simulation");
             System.out.println("9. Logout");
             System.out.print("Choose (1-9): ");
 
@@ -128,9 +128,10 @@ public class AdminView {
             System.out.println("6. Update fan account");
             System.out.println("7. Search fan account");
             System.out.println("8. Remove fan account");
-            System.out.println("9. Lock / unlock fan account");
+            System.out.println("9. Lock fan account");
+            System.out.println("10. Unlock fan account");
             System.out.println("0. Back");
-            System.out.print("Choose (0-9): ");
+            System.out.print("Choose (0-10): ");
             String choice = readLine();
             if (choice == null || "0".equals(choice.trim())) {
                 break;
@@ -213,11 +214,19 @@ public class AdminView {
                         }
                         break;
                     case "9":
-                        System.out.print("Fan Account ID to lock/unlock: ");
+                        System.out.print("Fan Account ID to lock: ");
                         String lockId = readLine();
                         if (lockId != null && !lockId.trim().isEmpty()) {
                             adminController.getAccountController().lockFanAccount(lockId.trim());
-                            System.out.println(">> Fan account lock status updated.");
+                            System.out.println(">> Fan account locked.");
+                        }
+                        break;
+                    case "10":
+                        System.out.print("Fan Account ID to unlock: ");
+                        String unlockId = readLine();
+                        if (unlockId != null && !unlockId.trim().isEmpty()) {
+                            adminController.getAccountController().unlockFanAccount(unlockId.trim());
+                            System.out.println(">> Fan account unlocked.");
                         }
                         break;
                     default:

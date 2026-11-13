@@ -129,6 +129,16 @@ public class AccountController {
         fanRepo.save(fan);
     }
 
+    public void unlockFanAccount(String id) throws IOException {
+        Account found = viewProfile(id);
+        if (!(found instanceof Fan)) {
+            throw new IllegalArgumentException("Fan account was not found.");
+        }
+        Fan fan = (Fan) found;
+        fan.setLocked(false);
+        fanRepo.save(fan);
+    }
+
     public Account viewProfile(String id) throws IOException {
         if (id == null || id.trim().isEmpty()) {
             throw new IllegalArgumentException("Account ID is required.");

@@ -52,11 +52,10 @@ public class StaffView {
             System.out.println("2. Sell tickets offline");
             System.out.println("3. Approve booking payment");
             System.out.println("4. View seat map");
-            System.out.println("5. Staff report");
-            System.out.println("6. View pending booking approvals");
-            System.out.println("7. Respond to fan support requests");
-            System.out.println("8. Logout");
-            System.out.print("Choose (1-8): ");
+            System.out.println("5. Shift report");
+            System.out.println("6. Respond to fan support requests");
+            System.out.println("7. Logout");
+            System.out.print("Choose (1-7): ");
 
             String input = readLine();
             if (input == null) {
@@ -81,17 +80,14 @@ public class StaffView {
                         staffReport();
                         break;
                     case "6":
-                        viewPendingApprovals();
-                        break;
-                    case "7":
                         handleSupportRequests();
                         break;
-                    case "8":
+                    case "7":
                         loggedIn = false;
                         System.out.println("Staff logged out successfully.");
                         break;
                     default:
-                        System.out.println("Invalid choice. Please choose 1-8.");
+                        System.out.println("Invalid choice. Please choose 1-7.");
                 }
             } catch (Exception e) {
                 System.out.println("[ERROR]: " + e.getMessage());
@@ -283,51 +279,6 @@ public class StaffView {
             System.out.println(
                     ">> [ERROR]: Transaction '" + targetTxnId + "' not found or not awaiting staff confirmation.");
         }
-    }
-
-    public void viewPendingApprovals() throws IOException {
-        List<Transaction> pendingBookings = staffController.getPendingApprovalTransactions();
-        if (pendingBookings.isEmpty()) {
-            System.out.println("There are no pending booking approvals.");
-            return;
-        }
-        System.out.println("\n=== PENDING STAFF APPROVALS ===");
-        int maxSeatsLen = 16;
-        for (Transaction txn : pendingBookings) {
-            if (txn.getSeatIds() != null) {
-                String s = String.join(", ", txn.getSeatIds());
-                if (s.length() > maxSeatsLen) {
-                    maxSeatsLen = s.length();
-                }
-            }
-        }
-        int seatsColWidth = Math.max(16, maxSeatsLen);
-        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
-        String fmt = "%-3s | %-14s | %-16s | %-10s | %-8s | %-" + seatsColWidth + "s | %15s | %-10s%n";
-        int totalLineWidth = 78 + seatsColWidth;
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < totalLineWidth; i++) {
-            sb.append("-");
-        }
-        String sep = sb.toString();
-        System.out.println(sep);
-        System.out.printf(fmt, "#", "TRANSACTION ID", "BOOKING DATE", "FAN ID", "MATCH", "SEATS", "AMOUNT", "METHOD");
-        System.out.println(sep);
-        int idx = 1;
-        for (Transaction txn : pendingBookings) {
-            String dateStr = txn.getTransactionDate() != null ? txn.getTransactionDate().format(dtf) : "N/A";
-            String seatsStr = txn.getSeatIds() != null ? String.join(", ", txn.getSeatIds()) : "";
-            System.out.printf(fmt,
-                    String.valueOf(idx++),
-                    txn.getTransactionId(),
-                    dateStr,
-                    txn.getFanId(),
-                    txn.getMatchId(),
-                    seatsStr,
-                    String.format("%,.0f VND", txn.getTotalAmount()),
-                    txn.getPaymentMethod() != null ? txn.getPaymentMethod().name() : "N/A");
-        }
-        System.out.println(sep);
     }
 
     public void viewRealTimeSeatingChart() throws IOException {
