@@ -134,11 +134,6 @@ public class Notification extends BaseEntity {
                     i++;
                     continue;
                 }
-                if (escaped == 'r') {
-                    unescaped.append('\r');
-                    i++;
-                    continue;
-                }
             }
             unescaped.append(current);
         }

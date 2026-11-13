@@ -102,7 +102,6 @@ public class Section extends BaseEntity {
         } catch (IllegalArgumentException legacyType) {
             switch (value.toUpperCase()) {
                 case "VIP":
-                case "VVIP":
                     return Stand.A;
                 case "STANDARD":
                     return Stand.B;
