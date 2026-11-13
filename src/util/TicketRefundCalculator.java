@@ -4,11 +4,11 @@ import model.Ticket;
 import model.Transaction;
 import java.util.List;
 
-public final class TicketRefundCalculator {
-    private TicketRefundCalculator() {
+public class TicketRefundCalculator {
+    public TicketRefundCalculator() {
     }
 
-    public static double getVoucherDiscount(Ticket ticket, Transaction transaction, List<Ticket> transactionTickets) {
+    public double getVoucherDiscount(Ticket ticket, Transaction transaction, List<Ticket> transactionTickets) {
         double subtotal = 0.0;
         for (Ticket transactionTicket : transactionTickets) {
             subtotal += Math.max(0.0, transactionTicket.getPrice());
@@ -21,7 +21,7 @@ public final class TicketRefundCalculator {
         return Math.min(Math.max(0.0, ticket.getPrice()), discount);
     }
 
-    public static double calculateRefundAmount(Ticket ticket, Transaction transaction,
+    public double calculateRefundAmount(Ticket ticket, Transaction transaction,
             List<Ticket> transactionTickets) {
         double paidAmount = Math.max(0.0,
                 ticket.getPrice() - getVoucherDiscount(ticket, transaction, transactionTickets));

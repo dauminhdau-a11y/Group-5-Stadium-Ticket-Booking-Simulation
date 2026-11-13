@@ -249,7 +249,7 @@ public class Seat extends BaseEntity {
         return this;
     }
 
-    private Stand parseStand(String value) {
+    public Stand parseStand(String value) {
         try {
             return Stand.valueOf(value.toUpperCase());
         } catch (IllegalArgumentException legacyType) {
@@ -269,7 +269,7 @@ public class Seat extends BaseEntity {
         }
     }
 
-    private boolean isSeatStatus(String value) {
+    public boolean isSeatStatus(String value) {
         try {
             SeatStatus.valueOf(value);
             return true;

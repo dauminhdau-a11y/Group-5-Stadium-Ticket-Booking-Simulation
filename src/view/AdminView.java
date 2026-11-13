@@ -489,7 +489,7 @@ public class AdminView {
         }
     }
 
-    private void printSectionTable(List<Section> sections) {
+    public void printSectionTable(List<Section> sections) {
         System.out.println("\n--- Sections (" + sections.size() + ") ---");
         System.out.printf("%-18s | %-12s | %-20s | %-6s | %-10s | %-14s%n",
                 "SECTION ID", "STADIUM ID", "NAME", "STAND", "CAPACITY", "BASE PRICE");
@@ -626,7 +626,7 @@ public class AdminView {
         }
     }
 
-    private void paginateSeatList(List<Seat> seats) {
+    public void paginateSeatList(List<Seat> seats) {
         if (seats == null || seats.isEmpty()) {
             System.out.println("No seats found.");
             return;
@@ -775,7 +775,7 @@ public class AdminView {
         }
     }
 
-    private void paginateTicketList(List<Ticket> tickets) {
+    public void paginateTicketList(List<Ticket> tickets) {
         if (tickets == null || tickets.isEmpty()) {
             System.out.println("No tickets found.");
             return;

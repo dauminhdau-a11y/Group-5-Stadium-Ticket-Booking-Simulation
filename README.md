@@ -49,6 +49,8 @@ Hệ thống phân quyền nghiêm ngặt theo 3 vai trò độc lập với cơ
 ### 1. Dành cho Khách vãng lai & Màn hình xác thực (AuthView)
 * **Đăng ký tài khoản (Register):** Đăng ký tài khoản Fan mới với kiểm tra định dạng dữ liệu chặt chẽ (username không trùng, email hợp lệ, số điện thoại, mật khẩu).
 * **Đăng nhập hệ thống (Login):** Phân luồng đăng nhập chính xác theo vai trò; tự động từ chối tài khoản bị khóa (`locked`).
+* **Tìm kiếm trận đấu (Search match):** Tìm kiếm trận đấu theo từ khóa (tên đội bóng, tên sân, mã trận đấu).
+* **Lọc trận đấu (Filter match):** Lọc theo ngày, sân vận động, đội bóng (tự động đánh dấu trận đã "Hết vé" khi sold out).
 
 ---
 
@@ -118,9 +120,9 @@ Hệ thống phân quyền nghiêm ngặt theo 3 vai trò độc lập với cơ
   * Xem danh sách tất cả các sân vận động.
   * **Tạo sân vận động tự động có 4 khán đài:** Khi thêm mới một sân vận động, hệ thống **tự động khởi tạo ngay 4 khán đài tiêu chuẩn**:
     * **Khán đài A (Stand A - South)**: Đơn giá tiêu chuẩn `500,000 VND`
-    * **Khán đài B (Stand B - North)**: Đơn giá tiêu chuẩn `400,000 VND`
-    * **Khán đài C (Stand C - West)**: Đơn giá tiêu chuẩn `300,000 VND`
-    * **Khán đài D (Stand D - East)**: Đơn giá tiêu chuẩn `200,000 VND`
+    * **Khán đài B (Stand B - North)**: Đơn giá tiêu chuẩn `300,000 VND`
+    * **Khán đài C (Stand C - West)**: Đơn giá tiêu chuẩn `150,000 VND`
+    * **Khán đài D (Stand D - East)**: Đơn giá tiêu chuẩn `80,000 VND`
     * Sức chứa tự động chia đều theo tổng sức chứa của sân vận động.
   * Cập nhật thông tin sân và xóa sân vận động (tự động dọn dẹp các phân khu khán đài liên quan).
 * **4. Quản lý phân khu khán đài (Manage Section):**

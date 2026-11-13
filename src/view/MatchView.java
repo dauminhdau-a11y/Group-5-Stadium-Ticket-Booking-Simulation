@@ -44,7 +44,7 @@ public class MatchView {
         displayMatches(matches, LocalDateTime.now());
     }
 
-    private void displayMatches(List<Match> matches, LocalDateTime currentTime) throws IOException {
+    public void displayMatches(List<Match> matches, LocalDateTime currentTime) throws IOException {
         if (matches == null || matches.isEmpty()) {
             System.out.println("No matches found.");
             return;
@@ -123,14 +123,14 @@ public class MatchView {
         }
     }
 
-    private LocalDate readOptionalDate(String prompt) {
+    public LocalDate readOptionalDate(String prompt) {
         System.out.print(prompt);
         String value = readLine();
         return value == null || value.trim().isEmpty()
                 ? null : LocalDate.parse(value.trim());
     }
 
-    private Double readOptionalPrice(String prompt) {
+    public Double readOptionalPrice(String prompt) {
         System.out.print(prompt);
         String value = readLine();
         if (value == null || value.trim().isEmpty()) {
@@ -143,11 +143,11 @@ public class MatchView {
         return price;
     }
 
-    private String readLine() {
+    public String readLine() {
         return scanner.hasNextLine() ? scanner.nextLine() : null;
     }
 
-    private String repeat(String value, int count) {
+    public String repeat(String value, int count) {
         StringBuilder result = new StringBuilder();
         for (int i = 0; i < count; i++) {
             result.append(value);

@@ -75,7 +75,7 @@ public class TicketRepository extends CsvRepository<Ticket> {
         return new Ticket(parts[0].trim(), "", "", 0.0, TicketStatus.AVAILABLE);
     }
 
-    private double parseDoubleSafe(String val) {
+    public double parseDoubleSafe(String val) {
         if (val == null || val.trim().isEmpty()) {
             return 0.0;
         }
@@ -86,7 +86,7 @@ public class TicketRepository extends CsvRepository<Ticket> {
         }
     }
 
-    private TicketStatus parseStatusSafe(String val) {
+    public TicketStatus parseStatusSafe(String val) {
         if (val == null || val.trim().isEmpty()) {
             return TicketStatus.AVAILABLE;
         }
@@ -97,7 +97,7 @@ public class TicketRepository extends CsvRepository<Ticket> {
         }
     }
 
-    private boolean isTicketStatus(String value) {
+    public boolean isTicketStatus(String value) {
         if (value == null || value.trim().isEmpty()) {
             return false;
         }

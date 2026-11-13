@@ -50,11 +50,11 @@ public class TransactionController {
     }
 
     public static class RefundableTicket {
-        private final Ticket ticket;
-        private final double voucherDiscount;
-        private final double refundAmount;
+        private Ticket ticket;
+        private double voucherDiscount;
+        private double refundAmount;
 
-        private RefundableTicket(Ticket ticket, double voucherDiscount, double refundAmount) {
+        public RefundableTicket(Ticket ticket, double voucherDiscount, double refundAmount) {
             this.ticket = ticket;
             this.voucherDiscount = voucherDiscount;
             this.refundAmount = refundAmount;
@@ -80,6 +80,7 @@ public class TransactionController {
     private CsvRepository<Match> matchRepo;
     private TicketRepository ticketRepo;
     private NotificationController notificationController;
+    private TicketRefundCalculator ticketRefundCalculator = new TicketRefundCalculator();
 
     public TransactionController(SyncMechanism mechanism, CsvRepository<Seat> seatRepo,
             CsvRepository<Transaction> transactionRepo) {
@@ -507,8 +508,8 @@ public class TransactionController {
                         || (ticket.getStatus() != TicketStatus.SOLD && ticket.getStatus() != TicketStatus.ACTIVE))) {
                     continue;
                 }
-                double voucherDiscount = TicketRefundCalculator.getVoucherDiscount(ticket, txn, tickets);
-                double refundAmount = TicketRefundCalculator.calculateRefundAmount(ticket, txn, tickets);
+                double voucherDiscount = ticketRefundCalculator.getVoucherDiscount(ticket, txn, tickets);
+                double refundAmount = ticketRefundCalculator.calculateRefundAmount(ticket, txn, tickets);
                 refundable.add(new RefundableTicket(ticket, voucherDiscount, refundAmount));
             }
         }
@@ -544,7 +545,7 @@ public class TransactionController {
         }
 
         List<Ticket> transactionTickets = getTransactionTickets(txn);
-        double refundAmount = TicketRefundCalculator.calculateRefundAmount(ticket, txn, transactionTickets);
+        double refundAmount = ticketRefundCalculator.calculateRefundAmount(ticket, txn, transactionTickets);
         ticket.setStatus(TicketStatus.REFUNDED);
         ticketRepo.save(ticket);
 
@@ -567,7 +568,7 @@ public class TransactionController {
         return new RefundResult(true, "Ticket refunded immediately; staff approval is not required.", refundAmount);
     }
 
-    private Transaction findTransactionForTicket(String fanId, Ticket ticket) throws IOException {
+    public Transaction findTransactionForTicket(String fanId, Ticket ticket) throws IOException {
         if (fanId == null || fanId.trim().isEmpty()) {
             return null;
         }
@@ -602,7 +603,7 @@ public class TransactionController {
         return true;
     }
 
-    private List<Ticket> getTransactionTickets(Transaction txn) throws IOException {
+    public List<Ticket> getTransactionTickets(Transaction txn) throws IOException {
         List<Ticket> tickets = ticketRepo.findByTransactionId(txn.getTransactionId());
         if (!tickets.isEmpty()) {
             return tickets;

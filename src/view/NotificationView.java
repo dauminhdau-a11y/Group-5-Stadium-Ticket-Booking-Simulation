@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Scanner;
 
 public class NotificationView {
-    private final NotificationController notificationController;
+    private NotificationController notificationController;
     private Scanner scanner;
 
     public NotificationView(NotificationController notificationController, Scanner scanner) {

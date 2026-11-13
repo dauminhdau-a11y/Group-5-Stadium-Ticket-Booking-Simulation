@@ -197,7 +197,7 @@ public class StaffController {
         return pending;
     }
 
-    private List<Ticket> getTransactionTickets(Transaction txn) throws IOException {
+    public List<Ticket> getTransactionTickets(Transaction txn) throws IOException {
         List<Ticket> tickets = ticketRepo.findByTransactionId(txn.getTransactionId());
         if (!tickets.isEmpty()) {
             return tickets;

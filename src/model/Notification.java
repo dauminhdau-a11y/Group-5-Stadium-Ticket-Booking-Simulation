@@ -85,13 +85,13 @@ public class Notification extends BaseEntity {
                 Boolean.parseBoolean(values.get(4)));
     }
 
-    private String csvField(String value) {
+    public String csvField(String value) {
         String safeValue = value == null ? "" : value.replace("\\", "\\\\")
                 .replace("\r", "\\r").replace("\n", "\\n");
         return "\"" + safeValue.replace("\"", "\"\"") + "\"";
     }
 
-    private List<String> parseCsvLine(String line) {
+    public List<String> parseCsvLine(String line) {
         List<String> values = new ArrayList<>();
         StringBuilder value = new StringBuilder();
         boolean quoted = false;
@@ -118,7 +118,7 @@ public class Notification extends BaseEntity {
         return values;
     }
 
-    private String unescapeLineBreaks(String value) {
+    public String unescapeLineBreaks(String value) {
         StringBuilder unescaped = new StringBuilder(value.length());
         for (int i = 0; i < value.length(); i++) {
             char current = value.charAt(i);

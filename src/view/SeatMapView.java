@@ -149,7 +149,7 @@ public class SeatMapView {
         System.out.println(lineSeparator + "\n");
     }
 
-    private List<String> formatSeatsForSideColumn(List<Seat> sideSeats, int seatsPerLine) {
+    public List<String> formatSeatsForSideColumn(List<Seat> sideSeats, int seatsPerLine) {
         List<String> lines = new ArrayList<>();
         if (sideSeats == null || sideSeats.isEmpty()) {
             lines.add("(No seats)");
@@ -177,7 +177,7 @@ public class SeatMapView {
         return lines;
     }
 
-    private void printAvailableStandSeats(String standTitle, List<Seat> standSeats, boolean showAll) {
+    public void printAvailableStandSeats(String standTitle, List<Seat> standSeats, boolean showAll) {
         List<String> avail = standSeats.stream()
                 .filter(s -> s.getStatus() == SeatStatus.AVAILABLE)
                 .map(Seat::getSeatId)
@@ -195,7 +195,7 @@ public class SeatMapView {
         }
     }
 
-    private String formatStandPrice(List<Seat> seats) {
+    public String formatStandPrice(List<Seat> seats) {
         if (seats == null || seats.isEmpty()) {
             return "Ticket price: Not updated";
         }
@@ -218,7 +218,7 @@ public class SeatMapView {
                 minimumPrice, maximumPrice);
     }
 
-    private void renderSeatGrid(List<Seat> seats, int itemsPerRow, int totalWidth, boolean showAll) {
+    public void renderSeatGrid(List<Seat> seats, int itemsPerRow, int totalWidth, boolean showAll) {
         if (seats == null || seats.isEmpty()) {
             System.out.println(centerVisible("(No seats in this section)", totalWidth));
             return;
@@ -258,7 +258,7 @@ public class SeatMapView {
         }
     }
 
-    private String formatSingleSeat(Seat s) {
+    public String formatSingleSeat(Seat s) {
         String statusText;
         String color;
         if (s.getStatus() == SeatStatus.AVAILABLE) {
@@ -274,7 +274,7 @@ public class SeatMapView {
         return color + String.format("[%s:%s]", s.getSeatId(), statusText) + RESET;
     }
 
-    private String formatSeatBadge(String tag, String color) {
+    public String formatSeatBadge(String tag, String color) {
         return color + "[ SEAT : " + tag + " ]" + RESET;
     }
 

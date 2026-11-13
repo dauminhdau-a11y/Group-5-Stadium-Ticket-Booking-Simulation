@@ -185,7 +185,7 @@ public class MatchController {
         return results;
     }
 
-    private boolean isWithinPriceRange(double price, Double minPrice, Double maxPrice) {
+    public boolean isWithinPriceRange(double price, Double minPrice, Double maxPrice) {
         return Double.isFinite(price) && price >= 0
                 && (minPrice == null || price >= minPrice)
                 && (maxPrice == null || price <= maxPrice);

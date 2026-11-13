@@ -131,7 +131,7 @@ public class AuthView {
         }
     }
 
-    private void displayBanner() {
+    public void displayBanner() {
        System.out.println("================================================================================");
         System.out.println("  _____ _             _ _                 _____ _      _        _               ");
         System.out.println(" / ____| |           | (_)               |_   _(_)    | |      | |              ");

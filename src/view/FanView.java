@@ -395,7 +395,7 @@ public class FanView {
         }
     }
 
-    private void sortTransactions(List<Transaction> transactions, int sortType) {
+    public void sortTransactions(List<Transaction> transactions, int sortType) {
         switch (sortType) {
             case 2:
                 transactions.sort((a, b) -> {
@@ -432,7 +432,7 @@ public class FanView {
         }
     }
 
-    private String getSortName(int sortType) {
+    public String getSortName(int sortType) {
         switch (sortType) {
             case 2: return "Oldest booking first";
             case 3: return "Highest amount first";
@@ -443,7 +443,7 @@ public class FanView {
         }
     }
 
-    private int getStatusPriority(TransactionStatus status) {
+    public int getStatusPriority(TransactionStatus status) {
         if (status == null) return 99;
         switch (status) {
             case PENDING: return 1;
@@ -455,7 +455,7 @@ public class FanView {
         }
     }
 
-    private void showTransactionDetails(Transaction txn) {
+    public void showTransactionDetails(Transaction txn) {
         System.out.println("\n==================================================");
         System.out.println("             BOOKING RECEIPT DETAILS              ");
         System.out.println("==================================================");

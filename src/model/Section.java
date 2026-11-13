@@ -96,7 +96,7 @@ public class Section extends BaseEntity {
         return this;
     }
 
-    private Stand parseStand(String value) {
+    public Stand parseStand(String value) {
         try {
             return Stand.valueOf(value.toUpperCase());
         } catch (IllegalArgumentException legacyType) {
