@@ -29,8 +29,9 @@ public class ReportController {
     public double getTotalRevenue() throws IOException {
         double revenue = 0.0;
         for (Transaction txn : transactionRepository.findAll()) {
-            if (txn.getStatus() == TransactionStatus.CONFIRMED || txn.getStatus() == TransactionStatus.SUCCESS) {
-                revenue += txn.getTotalAmount();
+            if (txn.getStatus() == TransactionStatus.CONFIRMED || txn.getStatus() == TransactionStatus.SUCCESS
+                    || txn.getStatus() == TransactionStatus.REFUNDED) {
+                revenue += txn.getNetAmount();
             }
         }
         return revenue;
@@ -39,10 +40,11 @@ public class ReportController {
     public Map<String, Double> getRevenueByMatch() throws IOException {
         Map<String, Double> revenueByMatch = new HashMap<>();
         for (Transaction txn : transactionRepository.findAll()) {
-            if (txn.getStatus() == TransactionStatus.CONFIRMED || txn.getStatus() == TransactionStatus.SUCCESS) {
+            if (txn.getStatus() == TransactionStatus.CONFIRMED || txn.getStatus() == TransactionStatus.SUCCESS
+                    || txn.getStatus() == TransactionStatus.REFUNDED) {
                 String matchId = txn.getMatchId() != null ? txn.getMatchId() : "Unknown";
                 double current = revenueByMatch.getOrDefault(matchId, 0.0);
-                revenueByMatch.put(matchId, current + txn.getTotalAmount());
+                revenueByMatch.put(matchId, current + txn.getNetAmount());
             }
         }
         return revenueByMatch;
@@ -57,8 +59,12 @@ public class ReportController {
             totalTxn++;
             if (txn.getStatus() == TransactionStatus.CONFIRMED || txn.getStatus() == TransactionStatus.SUCCESS) {
                 successfulTxn++;
-                totalRevenue += txn.getTotalAmount();
-            } else if (txn.getStatus() == TransactionStatus.REFUNDED) {
+            }
+            if (txn.getStatus() == TransactionStatus.CONFIRMED || txn.getStatus() == TransactionStatus.SUCCESS
+                    || txn.getStatus() == TransactionStatus.REFUNDED) {
+                totalRevenue += txn.getNetAmount();
+            }
+            if (txn.getStatus() == TransactionStatus.REFUNDED) {
                 refundedTxn++;
             }
         }

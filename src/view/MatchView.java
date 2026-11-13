@@ -2,7 +2,17 @@ package view;
 
 import controller.MatchController;
 import model.Match;
+import model.Seat;
+import model.enums.MatchStatus;
+import model.enums.SeatStatus;
+import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Scanner;
 
 public class MatchView {
@@ -30,35 +40,118 @@ public class MatchView {
         this.scanner = scanner;
     }
 
-    public void displayMatches(List<Match> matches) {
+    public void displayMatches(List<Match> matches) throws IOException {
+        displayMatches(matches, LocalDateTime.now());
+    }
+
+    private void displayMatches(List<Match> matches, LocalDateTime currentTime) throws IOException {
         if (matches == null || matches.isEmpty()) {
             System.out.println("No matches found.");
             return;
         }
-        System.out.println("\n------------------------------------------------------------------------------------------------");
-        System.out.printf("%-10s | %-32s | %-12s | %-8s | %-20s%n", "Match ID", "Fixture", "Date", "Time", "Stadium");
-        System.out.println("------------------------------------------------------------------------------------------------");
+        Map<String, List<Seat>> seatsByMatch = matchController.getSeatsByMatch();
+        String separator = repeat("-", 137);
+        System.out.println("\n" + separator);
+        System.out.printf("%-10s | %-43s | %-28s | %-16s | %-12s | %-10s%n",
+                "Match ID", "Fixture", "Stadium", "Kickoff", "Seats Left", "Status");
+        System.out.println(separator);
         for (Match m : matches) {
-            String fixture = m.getHomeTeam() + " vs " + m.getAwayTeam();
-            String dateStr = m.getMatchDate() != null ? m.getMatchDate().toString() : "TBD";
-            System.out.printf("%-10s | %-32s | %-12s | %-8s | %-20s%n",
-                    m.getMatchId(), fixture, dateStr, m.getMatchTime(), m.getStadium());
+            String fixture = m.getTitle();
+            String kickoff = m.getMatchDate() == null || m.getMatchTime() == null
+                    || m.getMatchTime().trim().isEmpty()
+                    ? "TBD"
+                    : m.getMatchDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+                            + " " + m.getMatchTime();
+            List<Seat> matchSeats = seatsByMatch.get(m.getMatchId().toUpperCase(Locale.ROOT));
+            int availableSeats = 0;
+            if (matchSeats != null) {
+                for (Seat seat : matchSeats) {
+                    if (seat.getStatus() == SeatStatus.AVAILABLE) {
+                        availableSeats++;
+                    }
+                }
+            }
+            String seatsLeft = availableSeats + "/" + (matchSeats == null ? 0 : matchSeats.size());
+            MatchStatus status = matchController.getCurrentStatus(m, currentTime);
+            System.out.printf("%-10s | %-43s | %-28s | %-16s | %-12s | %-10s%n",
+                    m.getMatchId(), fixture, m.getStadium() == null ? "-" : m.getStadium(), kickoff,
+                    seatsLeft, status);
         }
-        System.out.println("------------------------------------------------------------------------------------------------");
+        System.out.println(separator);
     }
 
-    public void displayMatchDetail(Match match) {
-        if (match == null) {
-            System.out.println("Match not found.");
-            return;
+    public void filterMatches() throws IOException {
+        System.out.println("\n--- Filter Matches ---");
+        System.out.println("Status: 1. SCHEDULED  2. UPCOMING  3. ONGOING  4. FINISHED  5. CANCELLED  6. Any");
+        System.out.print("Choose status (1-6): ");
+        String statusChoice = readLine();
+        statusChoice = statusChoice == null ? null : statusChoice.trim();
+
+        try {
+            MatchStatus status;
+            if ("1".equals(statusChoice)) status = MatchStatus.SCHEDULED;
+            else if ("2".equals(statusChoice)) status = MatchStatus.UPCOMING;
+            else if ("3".equals(statusChoice)) status = MatchStatus.ONGOING;
+            else if ("4".equals(statusChoice)) status = MatchStatus.FINISHED;
+            else if ("5".equals(statusChoice)) status = MatchStatus.CANCELLED;
+            else if ("6".equals(statusChoice)) status = null;
+            else throw new IllegalArgumentException("Choose a status from 1 to 6.");
+
+            LocalDate fromDate = readOptionalDate("From date (YYYY-MM-DD, blank for any): ");
+            LocalDate toDate = readOptionalDate("To date (YYYY-MM-DD, blank for any): ");
+            Double minPrice = readOptionalPrice("Minimum ticket price (VND, blank for any): ");
+            Double maxPrice = readOptionalPrice("Maximum ticket price (VND, blank for any): ");
+
+            System.out.print("Stadium contains (blank for any): ");
+            String stadium = readLine();
+            System.out.print("Only matches with available seats? (1. Yes  2. Any): ");
+            String seatChoice = readLine();
+            boolean onlyAvailableSeats;
+            if (seatChoice == null || seatChoice.trim().isEmpty() || "2".equals(seatChoice.trim())) {
+                onlyAvailableSeats = false;
+            } else if ("1".equals(seatChoice.trim())) {
+                onlyAvailableSeats = true;
+            } else {
+                throw new IllegalArgumentException("Choose 1 or 2 for seat availability.");
+            }
+
+            List<Match> matches = matchController.filterMatches(status, fromDate, toDate,
+                    minPrice, maxPrice, stadium, onlyAvailableSeats, LocalDateTime.now());
+            displayMatches(matches);
+        } catch (DateTimeParseException | IllegalArgumentException e) {
+            System.out.println("Invalid filter: " + e.getMessage());
         }
-        System.out.println("\n=== MATCH DETAILS ===");
-        System.out.println("Match ID: " + match.getMatchId());
-        System.out.println("Teams:    " + match.getHomeTeam() + " vs " + match.getAwayTeam());
-        System.out.println("Date:     " + (match.getMatchDate() != null ? match.getMatchDate() : "TBD"));
-        System.out.println("Time:     " + match.getMatchTime());
-        System.out.println("Stadium:  " + match.getStadium());
-        System.out.println("Status:   " + match.getStatus());
-        System.out.printf("Base Price: %,.0f VND%n", match.getBasePrice());
+    }
+
+    private LocalDate readOptionalDate(String prompt) {
+        System.out.print(prompt);
+        String value = readLine();
+        return value == null || value.trim().isEmpty()
+                ? null : LocalDate.parse(value.trim());
+    }
+
+    private Double readOptionalPrice(String prompt) {
+        System.out.print(prompt);
+        String value = readLine();
+        if (value == null || value.trim().isEmpty()) {
+            return null;
+        }
+        double price = Double.parseDouble(value.trim());
+        if (!Double.isFinite(price) || price < 0) {
+            throw new IllegalArgumentException("Price must be finite and non-negative.");
+        }
+        return price;
+    }
+
+    private String readLine() {
+        return scanner.hasNextLine() ? scanner.nextLine() : null;
+    }
+
+    private String repeat(String value, int count) {
+        StringBuilder result = new StringBuilder();
+        for (int i = 0; i < count; i++) {
+            result.append(value);
+        }
+        return result.toString();
     }
 }

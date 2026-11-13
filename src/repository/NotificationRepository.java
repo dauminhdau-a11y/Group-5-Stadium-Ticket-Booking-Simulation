@@ -31,7 +31,6 @@ public class NotificationRepository extends CsvRepository<Notification> {
         if (fanId == null || fanId.trim().isEmpty()) {
             return notifications;
         }
-
         String normalizedFanId = fanId.trim();
         for (Notification notification : findAll()) {
             if (notification.getFanId() != null
@@ -57,14 +56,12 @@ public class NotificationRepository extends CsvRepository<Notification> {
         if (notificationId == null || notificationId.trim().isEmpty()) {
             return false;
         }
-
         Optional<Notification> result = findAll().stream()
                 .filter(notification -> notificationId.equals(notification.getId()))
                 .findFirst();
         if (!result.isPresent()) {
             return false;
         }
-
         Notification notification = result.get();
         if (!notification.isRead()) {
             notification.markAsRead();
@@ -77,7 +74,6 @@ public class NotificationRepository extends CsvRepository<Notification> {
         if (fanId == null || fanId.trim().isEmpty()) {
             return 0;
         }
-
         String normalizedFanId = fanId.trim();
         List<Notification> notifications = findAll();
         int updatedCount = 0;

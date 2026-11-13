@@ -19,6 +19,7 @@ public class Transaction extends BaseEntity {
     private PaymentMethod paymentMethod = PaymentMethod.QR_CODE;
     private String voucherCode = "";
     private double discountAmount = 0.0;
+    private double refundedAmount = 0.0;
     private DateTimeFormatter dateTimeFormatter;
 
     public Transaction() {
@@ -135,6 +136,24 @@ public class Transaction extends BaseEntity {
         this.discountAmount = discountAmount;
     }
 
+    public double getRefundedAmount() {
+        return refundedAmount;
+    }
+
+    public double getNetAmount() {
+        if (status == TransactionStatus.REFUNDED && refundedAmount == 0.0) {
+            return 0.0;
+        }
+        return Math.max(0.0, totalAmount - refundedAmount);
+    }
+
+    public void setRefundedAmount(double refundedAmount) {
+        if (refundedAmount < 0.0) {
+            throw new IllegalArgumentException("Refunded amount cannot be negative.");
+        }
+        this.refundedAmount = refundedAmount;
+    }
+
     public DateTimeFormatter getDateTimeFormatter() {
         if (dateTimeFormatter == null) {
             dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -153,7 +172,8 @@ public class Transaction extends BaseEntity {
                 + (paymentMethod != null ? paymentMethod.name() : PaymentMethod.QR_CODE.name()) + ","
                 + (voucherCode != null ? voucherCode : "") + ","
                 + discountAmount + ","
-                + seatListStr;
+                + seatListStr + ","
+                + refundedAmount;
     }
 
     public Transaction fromCsvLine(String csvLine) {
@@ -182,6 +202,9 @@ public class Transaction extends BaseEntity {
         }
         if (parts.length >= 10 && !parts[9].trim().isEmpty()) {
             this.seatIds = Arrays.asList(parts[9].trim().split(";"));
+        }
+        if (parts.length >= 11 && !parts[10].trim().isEmpty()) {
+            this.refundedAmount = Double.parseDouble(parts[10].trim());
         }
         return this;
     }

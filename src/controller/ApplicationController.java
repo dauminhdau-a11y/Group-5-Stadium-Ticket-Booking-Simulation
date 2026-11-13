@@ -4,6 +4,7 @@ import model.enums.SyncMechanism;
 import repository.AccountRepository;
 import repository.FanRepository;
 import repository.MatchRepository;
+import repository.NotificationRepository;
 import repository.SeatRepository;
 import repository.SectionRepository;
 import repository.StadiumRepository;
@@ -26,10 +27,12 @@ public class ApplicationController {
         SectionRepository sectionRepo = new SectionRepository("data/sections.csv");
         SeatRepository seatRepo = new SeatRepository("data/seats.csv", sectionRepo);
         MatchRepository matchRepo = new MatchRepository("data/matches.csv");
-        TicketRepository ticketRepo = new TicketRepository("data/tickets.csv");
+        TicketRepository ticketRepo = new TicketRepository("data/tickets.csv", seatRepo);
         VoucherRepository voucherRepo = new VoucherRepository("data/vouchers.csv");
         TransactionRepository transactionRepo = new TransactionRepository("data/transactions.csv");
         SupportRequestRepository supportRepo = new SupportRequestRepository("data/support_requests.csv");
+        NotificationController notificationController =
+                new NotificationController(new NotificationRepository("data/notifications.csv"));
 
         AuthController authController = new AuthController(fanRepo, staffRepo, adminRepo);
         AccountController accountController = new AccountController(
@@ -39,16 +42,16 @@ public class ApplicationController {
                 new AccountView(scanner),
                 authController);
 
-        MatchController matchController = new MatchController(matchRepo);
-        StadiumController stadiumController = new StadiumController(stadiumRepo);
+        MatchController matchController = new MatchController(matchRepo, seatRepo);
+        StadiumController stadiumController = new StadiumController(stadiumRepo, sectionRepo);
         SectionController sectionController = new SectionController(sectionRepo);
         SeatController seatController = new SeatController(seatRepo);
-        TicketController ticketController = new TicketController(ticketRepo);
         VoucherController voucherController = new VoucherController(voucherRepo);
         TransactionController transactionController = new TransactionController(
-                SyncMechanism.SYNCHRONIZED, seatRepo, transactionRepo, voucherRepo, matchRepo);
+                SyncMechanism.SYNCHRONIZED, seatRepo, transactionRepo, voucherRepo, matchRepo, notificationController);
+        TicketController ticketController = new TicketController(ticketRepo, transactionController);
         StaffController staffController = new StaffController(
-                seatRepo, ticketRepo, transactionRepo, matchRepo, supportRepo);
+                seatRepo, ticketRepo, transactionRepo, matchRepo, supportRepo, notificationController);
         SimulatorController simulatorController = new SimulatorController(
                 10, SyncMechanism.SYNCHRONIZED);
         ReportController reportController = new ReportController(transactionRepo);
@@ -72,7 +75,8 @@ public class ApplicationController {
                 voucherController,
                 transactionController,
                 staffController,
-                adminController);
+                adminController,
+                notificationController);
         authView.run();
     }
 }

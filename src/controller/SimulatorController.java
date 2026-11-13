@@ -45,7 +45,7 @@ public class SimulatorController {
         this.dataGenerator = new DataGenerator("data/seats.csv");
         this.resultRepo = new SimulationResultRepository("data/simulation_results.csv");
         this.seatRepo = new SeatRepository("data/seats.csv");
-        this.ticketRepo = new TicketRepository("data/tickets.csv");
+        this.ticketRepo = new TicketRepository("data/tickets.csv", seatRepo);
         this.transactionRepo = new TransactionRepository("data/transactions.csv");
         this.memoryResults = new ArrayList<>();
     }
@@ -119,7 +119,7 @@ public class SimulatorController {
                     Seat seatToBook = targetSeats.get(seatIdx);
                     String simFanId = "FAN_SIM_" + (requestIndex % 100);
                     boolean booked = strategy.bookSeat(seatToBook, simFanId, matchId,
-                            seatToBook.getPrice(), ticketRepo, seatRepo);
+                            ticketRepo.getPriceBySeatId(seatToBook.getSeatId()), ticketRepo, seatRepo);
                     if (booked) {
                         successCount.incrementAndGet();
                     } else {
@@ -171,8 +171,9 @@ public class SimulatorController {
     public double calculateRevenue() throws IOException {
         double total = 0.0;
         for (Transaction txn : transactionRepo.findAll()) {
-            if (txn.getStatus() == TransactionStatus.CONFIRMED || txn.getStatus() == TransactionStatus.SUCCESS) {
-                total += txn.getTotalAmount();
+            if (txn.getStatus() == TransactionStatus.CONFIRMED || txn.getStatus() == TransactionStatus.SUCCESS
+                    || txn.getStatus() == TransactionStatus.REFUNDED) {
+                total += txn.getNetAmount();
             }
         }
         return total;

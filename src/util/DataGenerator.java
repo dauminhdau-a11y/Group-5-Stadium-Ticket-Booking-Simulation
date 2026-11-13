@@ -1,6 +1,6 @@
 package util;
 
-import model.enums.SeatType;
+import model.enums.Stand;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -36,28 +36,10 @@ public class DataGenerator {
 
         BufferedWriter writer = new BufferedWriter(new FileWriter(file));
         for (int i = 1; i <= count; i++) {
-            SeatType type;
-            double price;
-            if (i <= count * 0.05) {
-                type = SeatType.VVIP;
-                price = 1800000.0;
-            } else if (i <= count * 0.25) {
-                type = SeatType.VIP;
-                price = 1000000.0;
-            } else if (i <= count * 0.70) {
-                type = SeatType.STANDARD;
-                price = 500000.0;
-            } else if (i <= count * 0.90) {
-                type = SeatType.ECONOMY;
-                price = 250000.0;
-            } else {
-                type = SeatType.STANDING;
-                price = 80000.0;
-            }
-
-            String seatId = type.name() + "-" + i;
-            String line = seatId + "," + matchId + ",AVAILABLE," + type.name() + ","
-                    + ((long) price) + ",1";
+            Stand stand = Stand.values()[Math.min(3, ((i - 1) * 4) / count)];
+            String seatId = stand.name() + "-" + i;
+            String line = seatId + "," + matchId + ",AVAILABLE," + stand.name()
+                    + ",500000,1";
             writer.write(line);
             writer.newLine();
         }

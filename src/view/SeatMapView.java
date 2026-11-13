@@ -2,30 +2,37 @@ package view;
 
 import model.Seat;
 import model.enums.SeatStatus;
-import model.enums.SeatType;
+import model.enums.Stand;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class SeatMapView {
     // ANSI Color Escape Codes for terminal rendering
-    private static final String RESET = "\u001B[0m";
-    private static final String BOLD = "\u001B[1m";
-    private static final String RED = "\u001B[31m";
-    private static final String GREEN = "\u001B[1;32m";
-    private static final String YELLOW = "\u001B[1;33m";
-    private static final String CYAN = "\u001B[1;36m";
+    private String RESET = "\u001B[0m";
+    private String BOLD = "\u001B[1m";
+    private String RED = "\u001B[31m";
+    private String GREEN = "\u001B[1;32m";
+    private String YELLOW = "\u001B[1;33m";
+    private String CYAN = "\u001B[1;36m";
 
     public SeatMapView() {
     }
 
     public void displaySeatMap(String matchId, List<Seat> seats) {
+        displaySeatMap(matchId, seats, false);
+    }
+
+    public void displaySeatMap(String matchId, List<Seat> seats, boolean showAll) {
         int totalWidth = 98;
         String lineSeparator = repeatStr("=", totalWidth);
 
         System.out.println("\n" + lineSeparator);
-        System.out.println(centerVisible(BOLD + "[ VISUAL STADIUM SEAT MAP - SO DO CHO NGOI SAN VAN DONG ]" + RESET, totalWidth));
-        System.out.println(centerVisible("[ TRAN DAU / MATCH: " + matchId + " | BO CUC 4 KHAN DAI BAO QUANH SAN DAU ]", totalWidth));
+        System.out.println(centerVisible(BOLD + "[ VISUAL STADIUM SEAT MAP ]" + RESET, totalWidth));
+        System.out.println(centerVisible("[ MATCH: " + matchId + " | 4 STANDS SURROUNDING PITCH FIELD ]", totalWidth));
+        if (showAll) {
+            System.out.println(centerVisible(YELLOW + "-- MODE: SHOWING ALL SEATS (FULL DETAIL) --" + RESET, totalWidth));
+        }
         System.out.println(lineSeparator);
 
         if (seats == null || seats.isEmpty()) {
@@ -34,46 +41,31 @@ public class SeatMapView {
             return;
         }
 
-        // 1. Phân loại ghế theo khán đài
-        List<Seat> standB = seats.stream()
-                .filter(s -> s.getSeatType() == SeatType.STANDARD)
-                .collect(Collectors.toList());
+        // 1. Group seats by stand
+        List<Seat> standA = seats.stream().filter(s -> s.getStand() == Stand.A).collect(Collectors.toList());
+        List<Seat> standB = seats.stream().filter(s -> s.getStand() == Stand.B).collect(Collectors.toList());
+        List<Seat> standC = seats.stream().filter(s -> s.getStand() == Stand.C).collect(Collectors.toList());
+        List<Seat> standD = seats.stream().filter(s -> s.getStand() == Stand.D).collect(Collectors.toList());
 
-        List<Seat> standC = seats.stream()
-                .filter(s -> s.getSeatId().startsWith("C"))
-                .collect(Collectors.toList());
-
-        List<Seat> standD = seats.stream()
-                .filter(s -> s.getSeatId().startsWith("D") || (s.getSeatType() == SeatType.ECONOMY && !s.getSeatId().startsWith("C")))
-                .collect(Collectors.toList());
-
-        List<Seat> standA_VVIP = seats.stream()
-                .filter(s -> s.getSeatType() == SeatType.VVIP)
-                .collect(Collectors.toList());
-
-        List<Seat> standA_VIP = seats.stream()
-                .filter(s -> s.getSeatType() == SeatType.VIP)
-                .collect(Collectors.toList());
-
-        // 2. KHÁN ĐÀI BẮC (NORTH STAND - STAND B - STANDARD)
-        System.out.println("\n" + centerVisible(CYAN + "[^] KHAN DAI BAC (NORTH STAND) - STAND B (STANDARD) [^]" + RESET, totalWidth));
-        System.out.println(centerVisible("Goc nhin toan canh san van dong | Don gia: 500,000 VND", totalWidth));
+        // 2. North Stand (Stand B)
+        System.out.println("\n" + centerVisible(CYAN + "[^] STAND B (NORTH) [^]" + RESET, totalWidth));
+        System.out.println(centerVisible(formatStandPrice(standB), totalWidth));
         System.out.println("+" + repeatStr("-", totalWidth - 2) + "+");
-        renderSeatGrid(standB, 5, totalWidth);
+        renderSeatGrid(standB, 5, totalWidth, showAll);
         System.out.println("+" + repeatStr("-", totalWidth - 2) + "+");
 
-        // 3. KHU VỰC TRUNG TÂM: KHÁN ĐÀI C (TÂY) + SÂN BÓNG ĐÁ (PITCH) + KHÁN ĐÀI D (ĐÔNG)
+        // 3. Central area: Stand C (West) + Soccer Pitch Field + Stand D (East)
         System.out.println();
         int leftColWidth = 24;
         int centerColWidth = 46;
         int rightColWidth = 24;
 
-        String headerC = CYAN + "KHAN DAI C (TAY/WEST)" + RESET;
-        String subC = "Sau Cau Mon 1 - 250k";
-        String headerPitch = BOLD + "[ SAN BONG DA / PITCH FIELD ]" + RESET;
-        String subPitch = "Vach giua san & 2 Khung thanh";
-        String headerD = CYAN + "KHAN DAI D (DONG/EAST)" + RESET;
-        String subD = "Sau Cau Mon 2 - 250k";
+        String headerC = CYAN + "STAND C (WEST)" + RESET;
+        String subC = formatStandPrice(standC);
+        String headerPitch = BOLD + "[ SOCCER PITCH FIELD ]" + RESET;
+        String subPitch = "Center Line & 2 Goal Posts";
+        String headerD = CYAN + "STAND D (EAST)" + RESET;
+        String subD = formatStandPrice(standD);
 
         System.out.println(
                 centerVisible(headerC, leftColWidth) + " | " +
@@ -91,7 +83,6 @@ public class SeatMapView {
                 repeatStr("-", rightColWidth)
         );
 
-        // Mô hình sân bóng đá nhìn từ trên cao (Pitch ASCII Art)
         String[] pitchRows = new String[]{
                 "+------+------------------------------+------+",
                 "| |--| |              |               | |--| |",
@@ -119,54 +110,49 @@ public class SeatMapView {
             );
         }
 
-        // 4. KHÁN ĐÀI NAM (SOUTH STAND - STAND A - VIP & VVIP)
+        // 4. South Stand (Stand A)
         System.out.println("+" + repeatStr("-", totalWidth - 2) + "+");
-        System.out.println(centerVisible(CYAN + "[v] KHAN DAI NAM (SOUTH STAND) - STAND A (VIP & VVIP) [v]" + RESET, totalWidth));
-        System.out.println(centerVisible("Khan dai chinh & Phong cho danh du | Don gia: 1,000,000 - 1,800,000 VND", totalWidth));
+        System.out.println(centerVisible(CYAN + "[v] STAND A (SOUTH) [v]" + RESET, totalWidth));
+        System.out.println(centerVisible(formatStandPrice(standA), totalWidth));
         System.out.println("+" + repeatStr("-", totalWidth - 2) + "+");
-
-        System.out.println("  >> " + BOLD + "KHU VUC VVIP LOUNGE (Phong VIP thuong hang - 1,800,000 VND):" + RESET);
-        renderSeatGrid(standA_VVIP, 5, totalWidth);
-        System.out.println();
-
-        System.out.println("  >> " + BOLD + "KHU VUC VIP CENTER (Khan dai VIP trung tam - 1,000,000 VND):" + RESET);
-        renderSeatGrid(standA_VIP, 5, totalWidth);
+        renderSeatGrid(standA, 5, totalWidth, showAll);
         System.out.println("+" + repeatStr("-", totalWidth - 2) + "+");
 
-        // 5. CHÚ THÍCH TRẠNG THÁI & THỐNG KÊ
+        // 5. Legend & Statistics
         long availableCount = seats.stream().filter(s -> s.getStatus() == SeatStatus.AVAILABLE).count();
         long lockedCount = seats.stream().filter(s -> s.getStatus() == SeatStatus.LOCKED).count();
         long bookedCount = seats.stream().filter(s -> s.getStatus() == SeatStatus.BOOKED).count();
 
-        System.out.println("\n[*] CHU THICH TRANG THAI GHE (SEAT STATUS LEGEND):");
-        System.out.println("   " + formatSeatBadge("[O]", GREEN) + "  : CON TRONG (AVAILABLE)  -  Ghe trong, san sang de dat ve");
-        System.out.println("   " + formatSeatBadge("[L]", YELLOW) + "  : DANG GIU (LOCKED)      -  Dang trong giao dich giu cho (10 phut)");
-        System.out.println("   " + formatSeatBadge("[X]", RED) + "  : DA DAT (BOOKED)        -  Ghe da co chu, khong the chon");
+        System.out.println("\n[*] SEAT STATUS LEGEND:");
+        System.out.println("   " + formatSeatBadge("[O]", GREEN) + "  : AVAILABLE  -  Seat is open and ready to book");
+        System.out.println("   " + formatSeatBadge("[L]", YELLOW) + "  : LOCKED     -  Seat is temporarily held in checkout (10 mins hold)");
+        System.out.println("   " + formatSeatBadge("[X]", RED) + "  : BOOKED     -  Seat is already reserved / purchased");
 
-        System.out.printf("\n[#] Thong ke (%s): Tong so: %d ghe | %sCon trong: %d%s | %sDang giu: %d%s | %sDa dat: %d%s%n",
+        System.out.printf("\n[#] Statistics (%s): Total: %d seats | %sAvailable: %d%s | %sLocked: %d%s | %sBooked: %d%s%n",
                 matchId, seats.size(),
                 GREEN, availableCount, RESET,
                 YELLOW, lockedCount, RESET,
                 RED, bookedCount, RESET);
 
-        // 6. DANH SÁCH GHẾ CÒN TRỐNG ĐỂ LỰA CHỌN NHANH (QUICK-PICK)
+        // 6. Available seats list
         System.out.println("\n" + lineSeparator);
-        System.out.println("  [+] DANH SACH GHE CON TRONG THEO TUNG KHAN DAI (DE LUA CHON NHANH):");
-        printAvailableStandSeats("Khan dai C (Tay - Economy | 250,000 VND)", standC);
-        printAvailableStandSeats("Khan dai D (Dong - Economy | 250,000 VND)", standD);
-        printAvailableStandSeats("Khan dai B (Bac - Standard | 500,000 VND)", standB);
-        List<Seat> standA = seats.stream()
-                .filter(s -> s.getSeatType() == SeatType.VIP || s.getSeatType() == SeatType.VVIP)
-                .collect(Collectors.toList());
-        printAvailableStandSeats("Khan dai A (Nam - VIP/VVIP | 1,000,000 - 1,800,000 VND)", standA);
-        System.out.println("  --> HUONG DAN: Quy khach ghi nho ma ghe con trong [O] o tren de nhap vao muc dat ve.");
+        System.out.println("  [+] AVAILABLE SEATS BY STAND (QUICK SELECTION):");
+        printAvailableStandSeats("Stand A (South)", standA, showAll);
+        printAvailableStandSeats("Stand B (North)", standB, showAll);
+        printAvailableStandSeats("Stand C (West)", standC, showAll);
+        printAvailableStandSeats("Stand D (East)", standD, showAll);
+        System.out.println("  --> TIP: Take note of available seat IDs [O] above to enter during ticket booking.");
+        if (!showAll && (standA.size() > 30 || standB.size() > 30)) {
+            System.out.println("  --> NOTE: Stands with high capacity display a preview of the first 30 seats.");
+            System.out.println("            Select 'View all seats' to inspect every single seat.");
+        }
         System.out.println(lineSeparator + "\n");
     }
 
     private List<String> formatSeatsForSideColumn(List<Seat> sideSeats, int seatsPerLine) {
         List<String> lines = new ArrayList<>();
         if (sideSeats == null || sideSeats.isEmpty()) {
-            lines.add("(Khong co ghe)");
+            lines.add("(No seats)");
             return lines;
         }
 
@@ -191,27 +177,56 @@ public class SeatMapView {
         return lines;
     }
 
-    private void printAvailableStandSeats(String standTitle, List<Seat> standSeats) {
+    private void printAvailableStandSeats(String standTitle, List<Seat> standSeats, boolean showAll) {
         List<String> avail = standSeats.stream()
                 .filter(s -> s.getStatus() == SeatStatus.AVAILABLE)
                 .map(Seat::getSeatId)
                 .collect(Collectors.toList());
         if (avail.isEmpty()) {
-            System.out.println("   * " + standTitle + ": (Het ve / Sold out)");
+            System.out.println("   * " + standTitle + ": (Sold out)");
         } else {
-            System.out.println("   * " + standTitle + ": " + GREEN + String.join(", ", avail) + RESET);
+            if (!showAll && avail.size() > 40) {
+                List<String> preview = avail.subList(0, 40);
+                System.out.println("   * " + standTitle + ": " + GREEN + String.join(", ", preview) + RESET
+                        + " ... (" + (avail.size() - 40) + " more available seats)");
+            } else {
+                System.out.println("   * " + standTitle + ": " + GREEN + String.join(", ", avail) + RESET);
+            }
         }
     }
 
-    private void renderSeatGrid(List<Seat> seats, int itemsPerRow, int totalWidth) {
+    private String formatStandPrice(List<Seat> seats) {
         if (seats == null || seats.isEmpty()) {
-            System.out.println(centerVisible("(Khong co ghe trong khu vuc nay)", totalWidth));
+            return "Ticket price: Not updated";
+        }
+        double minimumPrice = Double.POSITIVE_INFINITY;
+        double maximumPrice = Double.NEGATIVE_INFINITY;
+        for (Seat seat : seats) {
+            double price = seat.getPrice();
+            if (Double.isFinite(price) && price >= 0) {
+                minimumPrice = Math.min(minimumPrice, price);
+                maximumPrice = Math.max(maximumPrice, price);
+            }
+        }
+        if (!Double.isFinite(minimumPrice)) {
+            return "Ticket price: Not updated";
+        }
+        if (minimumPrice == maximumPrice) {
+            return String.format("Ticket price: %,.0f VND/seat", minimumPrice);
+        }
+        return String.format("Ticket price: %,.0f - %,.0f VND/seat",
+                minimumPrice, maximumPrice);
+    }
+
+    private void renderSeatGrid(List<Seat> seats, int itemsPerRow, int totalWidth, boolean showAll) {
+        if (seats == null || seats.isEmpty()) {
+            System.out.println(centerVisible("(No seats in this section)", totalWidth));
             return;
         }
 
         int count = 0;
         int rowNumber = 1;
-        int maxDisplay = 30;
+        int maxDisplay = showAll ? Integer.MAX_VALUE : 30;
         StringBuilder rowSb = new StringBuilder();
 
         for (Seat s : seats) {
@@ -219,26 +234,26 @@ public class SeatMapView {
             count++;
 
             if (count % itemsPerRow == 0) {
-                String rowPrefix = String.format("Hang %d: ", rowNumber++);
+                String rowPrefix = String.format("Row %d: ", rowNumber++);
                 System.out.println(centerVisible(rowPrefix + trimSpaces(rowSb.toString()), totalWidth));
                 rowSb = new StringBuilder();
             }
 
             if (count >= maxDisplay) {
                 if (rowSb.length() > 0) {
-                    String rowPrefix = String.format("Hang %d: ", rowNumber);
+                    String rowPrefix = String.format("Row %d: ", rowNumber);
                     System.out.println(centerVisible(rowPrefix + trimSpaces(rowSb.toString()), totalWidth));
                 }
                 int remaining = seats.size() - count;
                 if (remaining > 0) {
-                    System.out.println(centerVisible("... [Con " + remaining + " ghe khac trong khu vuc nay]", totalWidth));
+                    System.out.println(centerVisible("... [" + remaining + " more seats in this stand. Enter 'all' to show all]", totalWidth));
                 }
                 return;
             }
         }
 
         if (rowSb.length() > 0) {
-            String rowPrefix = String.format("Hang %d: ", rowNumber);
+            String rowPrefix = String.format("Row %d: ", rowNumber);
             System.out.println(centerVisible(rowPrefix + trimSpaces(rowSb.toString()), totalWidth));
         }
     }
@@ -263,7 +278,7 @@ public class SeatMapView {
         return color + "[ SEAT : " + tag + " ]" + RESET;
     }
 
-    public static String repeatStr(String s, int n) {
+    public String repeatStr(String s, int n) {
         if (n <= 0) return "";
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < n; i++) {
@@ -272,7 +287,7 @@ public class SeatMapView {
         return sb.toString();
     }
 
-    public static String trimSpaces(String s) {
+    public String trimSpaces(String s) {
         if (s == null) return "";
         int start = 0;
         while (start < s.length() && (s.charAt(start) == ' ' || s.charAt(start) == '\t' || s.charAt(start) == '\r' || s.charAt(start) == '\n')) {
@@ -285,12 +300,12 @@ public class SeatMapView {
         return s.substring(start, end);
     }
 
-    public static String stripAnsi(String text) {
+    public String stripAnsi(String text) {
         if (text == null) return "";
         return text.replaceAll("\u001B\\[[;\\d]*m", "");
     }
 
-    public static String centerVisible(String text, int targetWidth) {
+    public String centerVisible(String text, int targetWidth) {
         if (text == null) text = "";
         int visLen = stripAnsi(text).length();
         int totalPad = targetWidth - visLen;

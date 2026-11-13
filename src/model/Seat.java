@@ -1,7 +1,7 @@
 package model;
 
 import model.enums.SeatStatus;
-import model.enums.SeatType;
+import model.enums.Stand;
 import java.time.Duration;
 import java.time.LocalDateTime;
 
@@ -12,7 +12,7 @@ public class Seat extends BaseEntity {
     private String rowLabel;
     private int seatNumber;
     private SeatStatus status;
-    private SeatType seatType;
+    private Stand stand;
     private double price;
     private long version;
     private boolean sectionBasedFormat;
@@ -22,20 +22,32 @@ public class Seat extends BaseEntity {
     public Seat() {
         super();
         this.status = SeatStatus.AVAILABLE;
-        this.seatType = SeatType.STANDARD;
         this.price = 500000.0;
         this.version = 1;
     }
 
-    public Seat(String seatId, String matchId, SeatStatus status, SeatType seatType,
+    public Seat(String seatId, String matchId, SeatStatus status, Stand stand,
             double price, long version) {
         super(seatId);
         this.seatId = seatId;
         this.matchId = matchId;
         this.status = status;
-        this.seatType = seatType;
+        this.stand = stand;
         this.price = price;
         this.version = version;
+    }
+
+    public Seat(String seatId, String matchId, String sectionId, String rowLabel,
+            int seatNumber, SeatStatus status, long version) {
+        super(seatId);
+        this.seatId = seatId;
+        this.matchId = matchId;
+        this.sectionId = sectionId;
+        this.rowLabel = rowLabel;
+        this.seatNumber = seatNumber;
+        this.status = status;
+        this.version = version;
+        this.sectionBasedFormat = true;
     }
 
     public String getSeatId() {
@@ -88,12 +100,12 @@ public class Seat extends BaseEntity {
         this.version++;
     }
 
-    public SeatType getSeatType() {
-        return seatType;
+    public Stand getStand() {
+        return stand;
     }
 
-    public void setSeatType(SeatType seatType) {
-        this.seatType = seatType;
+    public void setStand(Stand stand) {
+        this.stand = stand;
     }
 
     public double getPrice() {
@@ -164,22 +176,23 @@ public class Seat extends BaseEntity {
         this.version++;
     }
 
-    public void setSectionDetails(SeatType seatType, double price) {
-        this.seatType = seatType;
+    public void setSectionDetails(Stand stand, double price) {
+        this.stand = stand;
         this.price = price;
     }
 
     @Override
     public String toCsvLine() {
         if (sectionBasedFormat) {
-            return String.join(",", getSeatId(), sectionId != null ? sectionId : "",
+            return String.join(",", getSeatId(), matchId != null ? matchId : "",
+                    sectionId != null ? sectionId : "",
                     rowLabel != null ? rowLabel : "",
                     Integer.toString(seatNumber), status != null ? status.name() : "AVAILABLE",
                     Long.toString(version));
         }
         return String.join(",", getSeatId(), matchId != null ? matchId : "",
                 status != null ? status.name() : "AVAILABLE",
-                seatType != null ? seatType.name() : "STANDARD",
+                stand != null ? stand.name() : "",
                 Double.toString(price), Long.toString(version),
                 lockedAt != null ? lockedAt.toString() : "",
                 lockedBy != null ? lockedBy : "");
@@ -192,9 +205,20 @@ public class Seat extends BaseEntity {
         }
         this.seatId = parts[0].trim();
         try {
+            if (parts.length == 7 && isSeatStatus(parts[5].trim())) {
+                this.matchId = parts[1].trim();
+                this.sectionId = parts[2].trim();
+                this.rowLabel = parts[3].trim();
+                this.seatNumber = Integer.parseInt(parts[4].trim());
+                this.status = SeatStatus.valueOf(parts[5].trim());
+                this.version = Long.parseLong(parts[6].trim());
+                this.sectionBasedFormat = true;
+                setId(seatId);
+                return this;
+            }
             this.matchId = parts[1].trim();
             this.status = SeatStatus.valueOf(parts[2].trim());
-            this.seatType = SeatType.valueOf(parts[3].trim());
+            this.stand = parseStand(parts[3].trim());
             this.price = Double.parseDouble(parts[4].trim());
             this.version = Long.parseLong(parts[5].trim());
             this.sectionBasedFormat = false;
@@ -209,15 +233,48 @@ public class Seat extends BaseEntity {
                 this.lockedBy = parts[7].trim();
             }
         } catch (IllegalArgumentException legacyFormatFailure) {
-            this.sectionId = parts[1].trim();
-            this.rowLabel = parts[2].trim();
-            this.seatNumber = Integer.parseInt(parts[3].trim());
-            this.status = SeatStatus.valueOf(parts[4].trim());
-            this.version = Long.parseLong(parts[5].trim());
-            this.matchId = "";
-            this.sectionBasedFormat = true;
+            if (parts.length == 6 && isSeatStatus(parts[4].trim())) {
+                this.sectionId = parts[1].trim();
+                this.rowLabel = parts[2].trim();
+                this.seatNumber = Integer.parseInt(parts[3].trim());
+                this.status = SeatStatus.valueOf(parts[4].trim());
+                this.version = Long.parseLong(parts[5].trim());
+                this.matchId = "";
+                this.sectionBasedFormat = true;
+            } else {
+                throw legacyFormatFailure;
+            }
         }
         setId(seatId);
         return this;
+    }
+
+    private Stand parseStand(String value) {
+        try {
+            return Stand.valueOf(value.toUpperCase());
+        } catch (IllegalArgumentException legacyType) {
+            switch (value.toUpperCase()) {
+                case "VIP":
+                case "VVIP":
+                    return Stand.A;
+                case "STANDARD":
+                    return Stand.B;
+                case "ECONOMY":
+                    return Stand.C;
+                case "STANDING":
+                    return Stand.D;
+                default:
+                    throw legacyType;
+            }
+        }
+    }
+
+    private boolean isSeatStatus(String value) {
+        try {
+            SeatStatus.valueOf(value);
+            return true;
+        } catch (IllegalArgumentException ignored) {
+            return false;
+        }
     }
 }

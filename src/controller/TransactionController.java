@@ -12,22 +12,23 @@ import model.enums.TicketStatus;
 import model.enums.TransactionStatus;
 import repository.CsvRepository;
 import repository.MatchRepository;
+import repository.NotificationRepository;
 import repository.TicketRepository;
 import repository.VoucherRepository;
 import util.RefundPolicy;
+import util.TicketRefundCalculator;
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class TransactionController {
-    public static class RefundResult {
-        private final boolean successful;
-        private final String message;
-        private final double refundAmount;
+    public class RefundResult {
+        private boolean successful;
+        private String message;
+        private double refundAmount;
 
         private RefundResult(boolean successful, String message, double refundAmount) {
             this.successful = successful;
@@ -48,12 +49,37 @@ public class TransactionController {
         }
     }
 
+    public static class RefundableTicket {
+        private final Ticket ticket;
+        private final double voucherDiscount;
+        private final double refundAmount;
+
+        private RefundableTicket(Ticket ticket, double voucherDiscount, double refundAmount) {
+            this.ticket = ticket;
+            this.voucherDiscount = voucherDiscount;
+            this.refundAmount = refundAmount;
+        }
+
+        public Ticket getTicket() {
+            return ticket;
+        }
+
+        public double getVoucherDiscount() {
+            return voucherDiscount;
+        }
+
+        public double getRefundAmount() {
+            return refundAmount;
+        }
+    }
+
     private SyncMechanism mechanism;
     private CsvRepository<Seat> seatRepo;
     private CsvRepository<Transaction> transactionRepo;
     private CsvRepository<Voucher> voucherRepo;
     private CsvRepository<Match> matchRepo;
     private TicketRepository ticketRepo;
+    private NotificationController notificationController;
 
     public TransactionController(SyncMechanism mechanism, CsvRepository<Seat> seatRepo,
             CsvRepository<Transaction> transactionRepo) {
@@ -68,12 +94,29 @@ public class TransactionController {
     public TransactionController(SyncMechanism mechanism, CsvRepository<Seat> seatRepo,
             CsvRepository<Transaction> transactionRepo, CsvRepository<Voucher> voucherRepo,
             CsvRepository<Match> matchRepo) {
+        this(mechanism, seatRepo, transactionRepo, voucherRepo, matchRepo,
+                new NotificationController(new NotificationRepository()));
+    }
+
+    public TransactionController(SyncMechanism mechanism, CsvRepository<Seat> seatRepo,
+            CsvRepository<Transaction> transactionRepo, CsvRepository<Voucher> voucherRepo,
+            CsvRepository<Match> matchRepo, NotificationController notificationController) {
         this.mechanism = mechanism;
         this.seatRepo = seatRepo;
         this.transactionRepo = transactionRepo;
         this.voucherRepo = voucherRepo != null ? voucherRepo : new VoucherRepository();
         this.matchRepo = matchRepo != null ? matchRepo : new MatchRepository();
-        this.ticketRepo = new TicketRepository("data/tickets.csv");
+        this.ticketRepo = new TicketRepository("data/tickets.csv", seatRepo);
+        this.notificationController = notificationController != null ? notificationController
+                : new NotificationController(new NotificationRepository());
+    }
+
+    public NotificationController getNotificationController() {
+        return notificationController;
+    }
+
+    public void setNotificationController(NotificationController notificationController) {
+        this.notificationController = notificationController;
     }
 
     public SyncMechanism getMechanism() {
@@ -164,7 +207,7 @@ public class TransactionController {
         }).collect(Collectors.toList());
     }
 
-        public static final int HOLD_TIMEOUT_MINUTES = 10;
+    public int HOLD_TIMEOUT_MINUTES = 10;
 
     public synchronized int releaseExpiredSeats() throws IOException {
         List<Seat> allSeats = seatRepo.findAll();
@@ -292,12 +335,16 @@ public class TransactionController {
         return seatsForTransaction;
     }
 
-    public double calculateSubtotal(List<Seat> seats) {
+    public double calculateSubtotal(List<Seat> seats) throws IOException {
         double total = 0.0;
         for (Seat seat : seats) {
-            total += seat.getPrice();
+            total += ticketRepo.getPriceBySeatId(seat.getSeatId());
         }
         return total;
+    }
+
+    public double getTicketPrice(Seat seat) throws IOException {
+        return ticketRepo.getPriceBySeatId(seat.getSeatId());
     }
 
     public Voucher validateAndCheckVoucher(String voucherCode) throws IOException {
@@ -308,25 +355,52 @@ public class TransactionController {
         if (voucher == null) {
             throw new IllegalArgumentException("Voucher code '" + voucherCode + "' does not exist.");
         }
-        if (voucher.isUsed()) {
-            throw new IllegalArgumentException("Voucher '" + voucherCode + "' has already been used.");
+        return voucher;
+    }
+
+    public Voucher validateAndCheckVoucher(String voucherCode, double orderAmount) throws IOException {
+        Voucher voucher = validateAndCheckVoucher(voucherCode);
+        if (voucher != null && !voucher.isApplicableTo(orderAmount)) {
+            throw new IllegalArgumentException(String.format(
+                    "Order must be at least %,.0f VND to use voucher '%s'.",
+                    voucher.getMinimumOrderAmount(), voucher.getCode()));
         }
         return voucher;
     }
 
+    public List<Voucher> getApplicableVouchers(double orderAmount) throws IOException {
+        List<Voucher> applicableVouchers = new ArrayList<>();
+        for (Voucher voucher : voucherRepo.findAll()) {
+            if (voucher.isApplicableTo(orderAmount)) {
+                applicableVouchers.add(voucher);
+            }
+        }
+        return applicableVouchers;
+    }
+
     public Transaction createTransaction(String fanId, String matchId,
             List<String> seatIds, String voucherCode, PaymentMethod paymentMethod) throws IOException {
+        return createTransaction(fanId, matchId, seatIds, voucherCode, paymentMethod, false);
+    }
+
+    public Transaction createTransaction(String fanId, String matchId,
+            List<String> seatIds, String voucherCode, PaymentMethod paymentMethod, boolean autoConfirm) throws IOException {
         if (this.mechanism == SyncMechanism.SYNCHRONIZED) {
             synchronized (this) {
-                return processTransaction(fanId, matchId, seatIds, voucherCode, paymentMethod);
+                return processTransaction(fanId, matchId, seatIds, voucherCode, paymentMethod, autoConfirm);
             }
         } else {
-            return processTransaction(fanId, matchId, seatIds, voucherCode, paymentMethod);
+            return processTransaction(fanId, matchId, seatIds, voucherCode, paymentMethod, autoConfirm);
         }
     }
 
     public Transaction processTransaction(String fanId, String matchId,
             List<String> seatIds, String voucherCode, PaymentMethod paymentMethod) throws IOException {
+        return processTransaction(fanId, matchId, seatIds, voucherCode, paymentMethod, false);
+    }
+
+    public Transaction processTransaction(String fanId, String matchId,
+            List<String> seatIds, String voucherCode, PaymentMethod paymentMethod, boolean autoConfirm) throws IOException {
         if (fanId == null || fanId.trim().isEmpty()) {
             throw new IllegalArgumentException("Fan ID is required.");
         }
@@ -337,43 +411,44 @@ public class TransactionController {
         Voucher appliedVoucher = null;
 
         if (voucherCode != null && !voucherCode.trim().isEmpty()) {
-            appliedVoucher = validateAndCheckVoucher(voucherCode);
+            appliedVoucher = validateAndCheckVoucher(voucherCode, subtotal);
             if (appliedVoucher != null) {
                 discount = appliedVoucher.calculateDiscount(subtotal);
             }
         }
 
         double finalAmount = Math.max(0, subtotal - discount);
+        String transId = "TXN-" + UUID.randomUUID().toString().substring(0, 8);
+
+        TransactionStatus initialTxnStatus = autoConfirm ? TransactionStatus.CONFIRMED : TransactionStatus.PENDING;
+        TicketStatus initialTicketStatus = autoConfirm ? TicketStatus.SOLD : TicketStatus.RESERVED;
 
         for (Seat seat : seatsForTransaction) {
             seat.confirmBooked();
             seatRepo.save(seat);
 
             String ticketId = "TCK-" + UUID.randomUUID().toString().substring(0, 8);
-            Ticket ticket = new Ticket(ticketId, matchId, seat.getSeatId(), fanId,
-                    seat.getPrice(), TicketStatus.SOLD, LocalDateTime.now().toString());
+            Ticket ticket = new Ticket(ticketId, transId, seat.getSeatId(), matchId,
+                    ticketRepo.getPriceBySeatId(seat.getSeatId()), initialTicketStatus.name());
             ticketRepo.save(ticket);
         }
 
-        if (appliedVoucher != null) {
-            appliedVoucher.setUsed(true);
-            voucherRepo.save(appliedVoucher);
-        }
-
-        String transId = "TXN-" + UUID.randomUUID().toString().substring(0, 8);
         Transaction transaction = new Transaction(
                 transId,
                 fanId,
                 matchId,
                 finalAmount,
                 LocalDateTime.now(),
-                TransactionStatus.CONFIRMED,
+                initialTxnStatus,
                 seatIds,
                 paymentMethod == null ? PaymentMethod.QR_CODE : paymentMethod,
                 appliedVoucher != null ? appliedVoucher.getCode() : "",
                 discount);
 
         transactionRepo.save(transaction);
+        if (initialTxnStatus == TransactionStatus.CONFIRMED && notificationController != null) {
+            notificationController.addBookingConfirmedNotification(transaction);
+        }
         return transaction;
     }
 
@@ -397,77 +472,148 @@ public class TransactionController {
     public double calculateTotalRevenue() throws IOException {
         double revenue = 0.0;
         for (Transaction txn : transactionRepo.findAll()) {
-            if (txn.getStatus() == TransactionStatus.CONFIRMED || txn.getStatus() == TransactionStatus.SUCCESS) {
-                revenue += txn.getTotalAmount();
+            if (txn.getStatus() == TransactionStatus.CONFIRMED || txn.getStatus() == TransactionStatus.SUCCESS
+                    || txn.getStatus() == TransactionStatus.REFUNDED) {
+                revenue += txn.getNetAmount();
             }
         }
         return revenue;
     }
 
-    public boolean refundTransaction(String transactionId) throws IOException {
-        return refundTransactionDetailed(transactionId).isSuccessful();
+    public List<RefundableTicket> getRefundableTicketsByFan(String fanId) throws IOException {
+        List<RefundableTicket> refundable = new ArrayList<>();
+        RefundPolicy refundPolicy = new RefundPolicy();
+        for (Transaction txn : getTransactionsByFan(fanId)) {
+            if (txn.getStatus() != TransactionStatus.CONFIRMED
+                    && txn.getStatus() != TransactionStatus.SUCCESS
+                    && txn.getStatus() != TransactionStatus.REFUND_REQUESTED) {
+                continue;
+            }
+            List<Ticket> tickets = getTransactionTickets(txn);
+            boolean previousRequestPending = txn.getStatus() == TransactionStatus.REFUND_REQUESTED
+                    || tickets.stream().anyMatch(ticket -> ticket.getStatus() == TicketStatus.REFUND_REQUESTED);
+            boolean deadlineAllowed = false;
+            try {
+                deadlineAllowed = refundPolicy.isRefundAllowed(
+                        matchRepo.findById(txn.getMatchId()), LocalDateTime.now());
+            } catch (IllegalArgumentException e) {
+                if (!previousRequestPending) {
+                    continue;
+                }
+            }
+            for (Ticket ticket : tickets) {
+                boolean ticketRequestPending = ticket.getStatus() == TicketStatus.REFUND_REQUESTED;
+                if (!ticketRequestPending && (!deadlineAllowed
+                        || (ticket.getStatus() != TicketStatus.SOLD && ticket.getStatus() != TicketStatus.ACTIVE))) {
+                    continue;
+                }
+                double voucherDiscount = TicketRefundCalculator.getVoucherDiscount(ticket, txn, tickets);
+                double refundAmount = TicketRefundCalculator.calculateRefundAmount(ticket, txn, tickets);
+                refundable.add(new RefundableTicket(ticket, voucherDiscount, refundAmount));
+            }
+        }
+        return refundable;
     }
 
-    public RefundResult refundTransactionDetailed(String transactionId) throws IOException {
-        Transaction txn = transactionRepo.findById(transactionId);
-        if (txn == null) {
-            return new RefundResult(false, "Transaction not found.", 0.0);
+    public RefundResult refundTicket(String fanId, String ticketId) throws IOException {
+        Ticket ticket = ticketRepo.findById(ticketId);
+        if (ticket == null) {
+            return new RefundResult(false, "Ticket not found.", 0.0);
         }
-        if (txn.getStatus() == TransactionStatus.REFUNDED) {
-            return new RefundResult(false, "This transaction has already been refunded.", 0.0);
+        Transaction txn = findTransactionForTicket(fanId, ticket);
+        if (txn == null || (txn.getStatus() != TransactionStatus.CONFIRMED
+                && txn.getStatus() != TransactionStatus.SUCCESS
+                && txn.getStatus() != TransactionStatus.REFUND_REQUESTED)) {
+            return new RefundResult(false, "Ticket is not part of a paid and confirmed booking owned by this fan.", 0.0);
         }
-        if (txn.getStatus() != TransactionStatus.CONFIRMED
-                && txn.getStatus() != TransactionStatus.SUCCESS) {
-            return new RefundResult(false, "Only paid and confirmed transactions can be refunded.", 0.0);
-        }
-
-        Match match = matchRepo.findById(txn.getMatchId());
-        LocalDateTime kickoff;
-        LocalDateTime refundDeadline;
-        try {
-            kickoff = RefundPolicy.getKickoff(match);
-            refundDeadline = kickoff.minusHours(RefundPolicy.MIN_HOURS_BEFORE_KICKOFF);
-        } catch (IllegalArgumentException e) {
-            return new RefundResult(false, e.getMessage(), 0.0);
+        boolean previousRequestPending = ticket.getStatus() == TicketStatus.REFUND_REQUESTED;
+        if (!previousRequestPending && ticket.getStatus() != TicketStatus.SOLD
+                && ticket.getStatus() != TicketStatus.ACTIVE) {
+            return new RefundResult(false, "Only sold tickets that have not been refunded can be requested.", 0.0);
         }
 
-        String formattedDeadline = refundDeadline.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
-        String formattedKickoff = kickoff.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
-        if (LocalDateTime.now().isAfter(refundDeadline)) {
-            return new RefundResult(false,
-                    "Refund deadline was " + formattedDeadline + " (12 hours before kick-off at "
-                            + formattedKickoff + "). The refund period has closed.",
-                    0.0);
+        if (!previousRequestPending) {
+            try {
+                if (!new RefundPolicy().isRefundAllowed(
+                        matchRepo.findById(txn.getMatchId()), LocalDateTime.now())) {
+                    return new RefundResult(false, "The refund request deadline has passed.", 0.0);
+                }
+            } catch (IllegalArgumentException e) {
+                return new RefundResult(false, "The refund request deadline has passed or match schedule is unavailable.", 0.0);
+            }
         }
 
-        txn.setStatus(TransactionStatus.REFUNDED);
+        List<Ticket> transactionTickets = getTransactionTickets(txn);
+        double refundAmount = TicketRefundCalculator.calculateRefundAmount(ticket, txn, transactionTickets);
+        ticket.setStatus(TicketStatus.REFUNDED);
+        ticketRepo.save(ticket);
+
+        txn.setRefundedAmount(txn.getRefundedAmount() + refundAmount);
+        boolean allRefunded = !transactionTickets.isEmpty();
+        for (Ticket transactionTicket : getTransactionTickets(txn)) {
+            if (transactionTicket.getStatus() != TicketStatus.REFUNDED) {
+                allRefunded = false;
+                break;
+            }
+        }
+        txn.setStatus(allRefunded ? TransactionStatus.REFUNDED : TransactionStatus.CONFIRMED);
         transactionRepo.save(txn);
 
-        for (String seatId : txn.getSeatIds()) {
-            Seat seat = seatRepo.findById(seatId);
-            if (seat != null) {
-                seat.setStatus(SeatStatus.AVAILABLE);
-                seatRepo.save(seat);
-            }
-            Ticket ticket = ticketRepo.findBySeatId(seatId);
-            if (ticket != null) {
-                ticket.setStatus(TicketStatus.REFUNDED);
-                ticketRepo.save(ticket);
-            }
+        Seat seat = seatRepo.findById(ticket.getSeatId());
+        if (seat != null) {
+            seat.setStatus(SeatStatus.AVAILABLE);
+            seatRepo.save(seat);
         }
-        return new RefundResult(true,
-                "Refund approved. The full paid amount will be refunded. Refund deadline: "
-                        + formattedDeadline + " (12 hours before kick-off).",
-                txn.getTotalAmount());
+        return new RefundResult(true, "Ticket refunded immediately; staff approval is not required.", refundAmount);
+    }
+
+    private Transaction findTransactionForTicket(String fanId, Ticket ticket) throws IOException {
+        if (fanId == null || fanId.trim().isEmpty()) {
+            return null;
+        }
+        for (Transaction txn : getTransactionsByFan(fanId)) {
+            if (txn.getMatchId() == null || ticket.getMatchId() == null
+                    || !txn.getMatchId().equalsIgnoreCase(ticket.getMatchId())
+                    || !txn.getSeatIds().contains(ticket.getSeatId())) {
+                continue;
+            }
+            if (ticket.getTransactionId() != null && !ticket.getTransactionId().trim().isEmpty()
+                    && !ticket.getTransactionId().equalsIgnoreCase(txn.getTransactionId())) {
+                continue;
+            }
+            return txn;
+        }
+        return null;
     }
 
     public boolean confirmReservationPayment(String transactionId) throws IOException {
         Transaction txn = transactionRepo.findById(transactionId);
-        if (txn == null) {
+        if (txn == null || txn.getStatus() != TransactionStatus.PENDING) {
             return false;
         }
         txn.setStatus(TransactionStatus.CONFIRMED);
         transactionRepo.save(txn);
+        for (Ticket ticket : getTransactionTickets(txn)) {
+            if (ticket.getStatus() == TicketStatus.RESERVED) {
+                ticket.setStatus(TicketStatus.SOLD);
+                ticketRepo.save(ticket);
+            }
+        }
         return true;
+    }
+
+    private List<Ticket> getTransactionTickets(Transaction txn) throws IOException {
+        List<Ticket> tickets = ticketRepo.findByTransactionId(txn.getTransactionId());
+        if (!tickets.isEmpty()) {
+            return tickets;
+        }
+        List<Ticket> result = new ArrayList<>();
+        for (String seatId : txn.getSeatIds()) {
+            Ticket ticket = ticketRepo.findBySeatId(seatId);
+            if (ticket != null) {
+                result.add(ticket);
+            }
+        }
+        return result;
     }
 }

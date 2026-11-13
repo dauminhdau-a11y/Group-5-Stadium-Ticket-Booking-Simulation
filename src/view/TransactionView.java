@@ -6,7 +6,8 @@ import model.Seat;
 import model.Transaction;
 import model.Voucher;
 import model.enums.PaymentMethod;
-import model.enums.SeatType;
+import model.enums.Stand;
+import model.enums.TransactionStatus;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -183,19 +184,29 @@ public class TransactionView {
         }
 
         renderSeatMap(matchId, allSeats);
+        System.out.print("Do you want to view all seats in full detail (without truncation)? (y/n, or 'all'): ");
+        String opt = scanner.nextLine().trim();
+        if (opt.equalsIgnoreCase("y") || opt.equalsIgnoreCase("yes") || opt.equalsIgnoreCase("all")) {
+            seatMapView.displaySeatMap(matchId, allSeats, true);
+        }
         pause();
     }
 
     public void renderPricingTable() {
         System.out.println("+----------+-----------------------+---------------+--------------------------+");
-        System.out.printf("| %-8s | %-21s | %-13s | %-24s |%n", "ZONE", "STAND AREA", "UNIT PRICE", "FEATURES");
+        System.out.printf("| %-8s | %-21s | %-13s | %-24s |%n", "STAND", "STAND AREA", "UNIT PRICE", "FEATURES");
         System.out.println("+----------+-----------------------+---------------+--------------------------+");
-        for (SeatType type : SeatType.values()) {
+        for (Stand stand : Stand.values()) {
+            String position;
+            switch (stand) {
+                case A: position = "South"; break;
+                case B: position = "North"; break;
+                case C: position = "West"; break;
+                default: position = "East"; break;
+            }
             System.out.printf("| %-8s | %-21s | %13s | %-24s |%n",
-                    type.name(),
-                    type.getStandName(),
-                    String.format("%,.0f VND", type.getBasePrice()),
-                    type.getDescription());
+                    stand.name(), "Stand " + stand.name() + " (" + position + ")",
+                    "Per section", "All seats in this stand");
             System.out.println("+----------+-----------------------+---------------+--------------------------+");
         }
     }
@@ -228,7 +239,7 @@ public class TransactionView {
             System.out.println(">> Transaction for fixture: " + match.getTitle() + " at " + match.getStadium());
         }
 
-        System.out.print("Select seat IDs (Max 4 tickets/transaction, comma-separated, e.g. VIP-01, B1): ");
+        System.out.print("Select seat IDs (Max 4 tickets/transaction, comma-separated, e.g. SEAT_00001, SEAT_00002): ");
         String seatInput = scanner.nextLine().trim();
         if (seatInput.isEmpty()) {
             System.out.println("Seat list cannot be empty!");
@@ -254,11 +265,11 @@ public class TransactionView {
         System.out.println("\n-----------------------------------------------------------------------------------------");
         System.out.println("SELECTED TICKETS BREAKDOWN (HOLDING FOR 10 MINUTES):");
         for (Seat s : validatedSeats) {
-            System.out.printf(" - Seat: %-8s | Zone: %-10s | %-24s | Price: %s%n",
+            System.out.printf(" - Seat: %-8s | Stand: %-10s | %-24s | Price: %s%n",
                     s.getSeatId(),
-                    s.getSeatType().name(),
-                    s.getSeatType().getStandName(),
-                    String.format("%,.0f VND", s.getPrice()));
+                    s.getStand() != null ? "Stand " + s.getStand().name() : "N/A",
+                    s.getStand() != null ? "Section " + s.getSectionId() : "",
+                    String.format("%,.0f VND", transactionController.getTicketPrice(s)));
         }
 
         double subtotal = transactionController.calculateSubtotal(validatedSeats);
@@ -270,62 +281,102 @@ public class TransactionView {
         double discountAmount = 0.0;
         double finalAmount = subtotal;
 
-        System.out.print("Do you have a discount voucher? (y/n): ");
-        String hasVoucher = scanner.nextLine().trim();
-        if (hasVoucher.equalsIgnoreCase("y") || hasVoucher.equalsIgnoreCase("yes")) {
-            while (true) {
-                System.out.print("Enter voucher code (e.g. DISCOUNT10, GIAM50K, VIP100K) or type 'skip' to skip: ");
-                String inputVoucher = scanner.nextLine().trim();
-                if (inputVoucher.equalsIgnoreCase("skip") || inputVoucher.isEmpty()) {
-                    break;
-                }
-                try {
-                    Voucher voucher = transactionController.validateAndCheckVoucher(inputVoucher);
-                    if (voucher != null) {
-                        appliedVoucherCode = voucher.getCode();
-                        discountAmount = voucher.calculateDiscount(subtotal);
-                        finalAmount = Math.max(0, subtotal - discountAmount);
-                        String discountTypeStr = voucher.getDiscountPercent() > 0 ?
-                                String.format("%.0f%% OFF", voucher.getDiscountPercent()) :
-                                String.format("%,.0f VND OFF", voucher.getDiscountAmount());
-                        System.out.println(">> Voucher [" + appliedVoucherCode + "] (" + discountTypeStr + ") applied successfully!");
-                        System.out.println(">> Discount: -" + String.format("%,.0f VND", discountAmount));
-                        System.out.println(">> Total amount to pay: " + String.format("%,.0f VND", finalAmount));
+        List<Voucher> applicableVouchers = transactionController.getApplicableVouchers(subtotal);
+        if (applicableVouchers.isEmpty()) {
+            System.out.println("No voucher is applicable to this order.");
+        } else {
+            System.out.println("\nVouchers applicable to this order (choose at most one):");
+            for (Voucher voucher : applicableVouchers) {
+                String discountType = voucher.getDiscountPercent() > 0
+                        ? String.format("%.0f%% OFF", voucher.getDiscountPercent())
+                        : String.format("%,.0f VND OFF", voucher.getDiscountAmount());
+                System.out.printf(" - %-16s | %-16s | Minimum order: %,.0f VND%n",
+                        voucher.getCode(), discountType, voucher.getMinimumOrderAmount());
+            }
+
+            System.out.print("Would you like to apply a voucher? (y/n): ");
+            String hasVoucher = scanner.nextLine().trim();
+            if (hasVoucher.equalsIgnoreCase("y") || hasVoucher.equalsIgnoreCase("yes")) {
+                while (true) {
+                    System.out.print("Enter one voucher code or type 'skip' to skip: ");
+                    String inputVoucher = scanner.nextLine().trim();
+                    if (inputVoucher.equalsIgnoreCase("skip") || inputVoucher.isEmpty()) {
                         break;
                     }
-                } catch (Exception e) {
-                    System.out.println("[VOUCHER ERROR]: " + e.getMessage());
-                    System.out.print("Would you like to try another voucher? (y/n): ");
-                    String retry = scanner.nextLine().trim();
-                    if (!retry.equalsIgnoreCase("y") && !retry.equalsIgnoreCase("yes")) {
-                        break;
+                    try {
+                        Voucher voucher = transactionController.validateAndCheckVoucher(inputVoucher, subtotal);
+                        if (voucher != null) {
+                            appliedVoucherCode = voucher.getCode();
+                            discountAmount = voucher.calculateDiscount(subtotal);
+                            finalAmount = Math.max(0, subtotal - discountAmount);
+                            String discountTypeStr = voucher.getDiscountPercent() > 0 ?
+                                    String.format("%.0f%% OFF", voucher.getDiscountPercent()) :
+                                    String.format("%,.0f VND OFF", voucher.getDiscountAmount());
+                            System.out.println(">> Voucher [" + appliedVoucherCode + "] (" + discountTypeStr + ") applied successfully!");
+                            System.out.println(">> Discount: -" + String.format("%,.0f VND", discountAmount));
+                            System.out.println(">> Total amount to pay: " + String.format("%,.0f VND", finalAmount));
+                            break;
+                        }
+                    } catch (Exception e) {
+                        System.out.println("[VOUCHER ERROR]: " + e.getMessage());
+                        System.out.print("Would you like to try another voucher? (y/n): ");
+                        String retry = scanner.nextLine().trim();
+                        if (!retry.equalsIgnoreCase("y") && !retry.equalsIgnoreCase("yes")) {
+                            break;
+                        }
                     }
                 }
             }
         }
 
         System.out.println("\n-----------------------------------------------------------------------------------------");
-        System.out.println("ONLINE PAYMENT GATEWAY (QR CODE):");
-        System.out.println("Online transactions require payment via Bank QR Code transfer within 10 minutes.");
-        System.out.print("Press [Enter] to display QR Code for payment (or type '0' to cancel and unlock seats): ");
-        String confirm = scanner.nextLine().trim();
-        if ("0".equals(confirm)) {
+        System.out.println("SELECT PAYMENT METHOD (HYBRID PAYMENT SYSTEM):");
+        System.out.println("  1. Bank Transfer (VietQR)         - Manual transfer via Bank App (Staff verifies & confirms)");
+        System.out.println("  2. Instant Gateway (Credit/Debit) - Auto-confirmed immediately by Payment Gateway");
+        System.out.println("  0. Cancel and unlock seats");
+        System.out.print("Choose payment method (0-2): ");
+        String methodChoice = scanner.nextLine().trim();
+
+        if ("0".equals(methodChoice)) {
             transactionController.cancelHoldSeats(fanId, seatIds);
             System.out.println("\n>> Transaction cancelled. Selected seats have been released back to AVAILABLE.");
             return;
         }
 
-        boolean paid = showQrPaymentScreen(fanId, matchId, finalAmount);
-        if (!paid) {
+        PaymentMethod selectedMethod = PaymentMethod.QR_CODE;
+        boolean autoConfirm = false;
+
+        if ("1".equals(methodChoice)) {
+            selectedMethod = PaymentMethod.QR_CODE;
+            int qrResult = showQrPaymentScreen(fanId, matchId, finalAmount);
+            if (qrResult == 0) {
+                transactionController.cancelHoldSeats(fanId, seatIds);
+                System.out.println("\n>> Payment cancelled at QR gateway. Selected seats have been unlocked and returned to AVAILABLE.");
+                return;
+            } else if (qrResult == 2) {
+                autoConfirm = true;
+            } else {
+                autoConfirm = false;
+            }
+        } else if ("2".equals(methodChoice)) {
+            selectedMethod = PaymentMethod.CREDIT_CARD;
+            boolean cardPaid = showInstantGatewayPaymentScreen(fanId, matchId, finalAmount);
+            if (!cardPaid) {
+                transactionController.cancelHoldSeats(fanId, seatIds);
+                System.out.println("\n>> Payment cancelled at Instant Gateway. Selected seats have been unlocked and returned to AVAILABLE.");
+                return;
+            }
+            autoConfirm = true;
+        } else {
+            System.out.println("[ERROR]: Invalid payment method choice. Transaction cancelled.");
             transactionController.cancelHoldSeats(fanId, seatIds);
-            System.out.println("\n>> Payment cancelled at QR gateway. Selected seats have been unlocked and returned to AVAILABLE.");
             return;
         }
 
         try {
             System.out.println("\nProcessing and finalizing your transaction...");
             Transaction transaction = transactionController.createTransaction(
-                    fanId, matchId, seatIds, appliedVoucherCode, PaymentMethod.QR_CODE);
+                    fanId, matchId, seatIds, appliedVoucherCode, selectedMethod, autoConfirm);
 
             printTransactionResult(transaction, subtotal);
         } catch (Exception e) {
@@ -334,7 +385,7 @@ public class TransactionView {
         }
     }
 
-    public boolean showQrPaymentScreen(String fanId, String matchId, double amount) {
+    public int showQrPaymentScreen(String fanId, String matchId, double amount) {
         System.out.println("\n=============================================================");
         System.out.println("             ONLINE QR PAYMENT GATEWAY - SELLER              ");
         System.out.println("=============================================================");
@@ -349,19 +400,48 @@ public class TransactionView {
         System.out.println("  |                    or E-Wallet App to pay)              |");
         System.out.println("  +---------------------------------------------------------+");
         System.out.println("  Payment details have been automatically dispatched to Seller.");
+        System.out.println("  [Tip]: Type 'auto' to simulate instant Bank IPN/Webhook auto-approval.");
         System.out.println("-------------------------------------------------------------");
-        System.out.print(">> Press [Enter] once completed (or type '0' to cancel): ");
+        System.out.print(">> Press [Enter] once completed (or 'auto' for auto-IPN, '0' to cancel): ");
         String confirm = scanner.nextLine().trim();
         if ("0".equals(confirm)) {
+            return 0;
+        }
+        if ("auto".equalsIgnoreCase(confirm)) {
+            System.out.println(">> [WEBHOOK IPN]: Bank transfer verified automatically by Webhook gateway!");
+            return 2;
+        }
+        System.out.println(">> Payment submitted. The booking is waiting for staff confirmation.");
+        return 1;
+    }
+
+    public boolean showInstantGatewayPaymentScreen(String fanId, String matchId, double amount) {
+        System.out.println("\n=============================================================");
+        System.out.println("        INSTANT PAYMENT GATEWAY (CREDIT CARD / E-WALLET)     ");
+        System.out.println("=============================================================");
+        System.out.println("  Match ID:     " + matchId);
+        System.out.println("  Fan ID:       " + fanId);
+        System.out.println("  Total Amount: " + String.format("%,.0f VND", amount));
+        System.out.println("-------------------------------------------------------------");
+        System.out.println("  Simulating Instant Payment Gateway (Visa / Master / E-Wallet)...");
+        System.out.print(">> Enter Cardholder / Account Name (or '0' to cancel): ");
+        String cardHolder = scanner.nextLine().trim();
+        if ("0".equals(cardHolder) || cardHolder.isEmpty()) {
             return false;
         }
-        System.out.println(">> Verifying transaction... [Success: Payment confirmed by Seller!]");
+        System.out.print(">> Enter Card / Account Number (e.g. 4111222233334444): ");
+        String cardNum = scanner.nextLine().trim();
+        if ("0".equals(cardNum) || cardNum.isEmpty()) {
+            return false;
+        }
+        System.out.println(">> Contacting Payment Gateway for authorization...");
+        System.out.println(">> [SUCCESS]: Payment authorized and captured instantly!");
         return true;
     }
 
     public void printTransactionResult(Transaction transaction, double subtotal) {
         System.out.println("\n==================================================");
-        System.out.println("         SUCCESSFUL TRANSACTION RECEIPT           ");
+        System.out.println("                BOOKING RECEIPT                   ");
         System.out.println("==================================================");
         System.out.println("Transaction ID: " + transaction.getTransactionId());
         System.out.println("Fan ID:         " + transaction.getFanId());
@@ -369,13 +449,20 @@ public class TransactionView {
         if (!transaction.getSeatIds().isEmpty()) {
             System.out.println("Seats:          " + String.join(", ", transaction.getSeatIds()));
         }
-        System.out.println("Payment Method: Online Banking (QR Code)");
+        System.out.println("Payment Method: " + (transaction.getPaymentMethod() != null ? transaction.getPaymentMethod().name() : "N/A"));
         System.out.println("Subtotal:       " + String.format("%,.0f VND", subtotal));
         if (transaction.getDiscountAmount() > 0) {
             System.out.println("Voucher:        " + transaction.getVoucherCode() + " (-" + String.format("%,.0f VND", transaction.getDiscountAmount()) + ")");
         }
         System.out.println("Final Paid:     " + String.format("%,.0f VND", transaction.getTotalAmount()));
-        System.out.println("Status:         CONFIRMED");
+        if (transaction.getStatus() == TransactionStatus.CONFIRMED || transaction.getStatus() == TransactionStatus.SUCCESS) {
+            System.out.println("Status:         CONFIRMED (TICKETS ISSUED & READY)");
+            System.out.println(">> Your booking has been confirmed automatically!");
+            System.out.println(">> Confirmation notification dispatched to your account.");
+        } else {
+            System.out.println("Status:         PENDING STAFF CONFIRMATION");
+            System.out.println(">> Seats are reserved while staff verifies the payment transfer.");
+        }
         String formattedDate = transaction.getTransactionDate() != null ?
                 transaction.getTransactionDate().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")) : "N/A";
         System.out.println("Date & Time:    " + formattedDate);

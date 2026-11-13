@@ -1,18 +1,20 @@
 package controller;
 
 import model.Seat;
+import model.SupportRequest;
 import model.Ticket;
 import model.Transaction;
 import model.enums.PaymentMethod;
 import model.enums.SeatStatus;
+import model.enums.SupportStatus;
 import model.enums.TicketStatus;
 import model.enums.TransactionStatus;
 import repository.MatchRepository;
+import repository.NotificationRepository;
 import repository.SeatRepository;
 import repository.SupportRequestRepository;
 import repository.TicketRepository;
 import repository.TransactionRepository;
-import util.RefundPolicy;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -25,23 +27,36 @@ public class StaffController {
     private TransactionRepository transactionRepo;
     private MatchRepository matchRepo;
     private SupportRequestRepository supportRepo;
+    private NotificationController notificationController;
 
     public StaffController() {
         this(new SeatRepository("data/seats.csv"),
                 new TicketRepository("data/tickets.csv"),
                 new TransactionRepository("data/transactions.csv"),
                 new MatchRepository("data/matches.csv"),
-                new SupportRequestRepository("data/support_requests.csv"));
+                new SupportRequestRepository("data/support_requests.csv"),
+                new NotificationController(new NotificationRepository()));
     }
 
     public StaffController(SeatRepository seatRepo, TicketRepository ticketRepo,
             TransactionRepository transactionRepo, MatchRepository matchRepo,
             SupportRequestRepository supportRepo) {
+        this(seatRepo, ticketRepo, transactionRepo, matchRepo, supportRepo,
+                new NotificationController(new NotificationRepository()));
+    }
+
+    public StaffController(SeatRepository seatRepo, TicketRepository ticketRepo,
+            TransactionRepository transactionRepo, MatchRepository matchRepo,
+            SupportRequestRepository supportRepo, NotificationController notificationController) {
         this.seatRepo = seatRepo;
         this.ticketRepo = ticketRepo;
         this.transactionRepo = transactionRepo;
         this.matchRepo = matchRepo;
         this.supportRepo = supportRepo;
+        if (notificationController == null) {
+            throw new IllegalArgumentException("Notification controller must not be null.");
+        }
+        this.notificationController = notificationController;
     }
 
     public SeatRepository getSeatRepo() {
@@ -97,6 +112,10 @@ public class StaffController {
         return result;
     }
 
+    public double getTicketPrice(Seat seat) throws IOException {
+        return ticketRepo.getPriceBySeatId(seat.getSeatId());
+    }
+
     public Transaction sellTicketsOffline(String customerIdentifier, String matchId,
             List<String> seatIds, PaymentMethod method) throws IOException {
         if (seatIds == null || seatIds.isEmpty()) {
@@ -113,7 +132,7 @@ public class StaffController {
                 throw new IllegalArgumentException("Seat " + seatId + " is not available.");
             }
             selectedSeats.add(seat);
-            total += seat.getPrice();
+            total += ticketRepo.getPriceBySeatId(seat.getSeatId());
         }
 
         for (Seat s : selectedSeats) {
@@ -122,7 +141,8 @@ public class StaffController {
 
             String tckId = "TCK-" + UUID.randomUUID().toString().substring(0, 8);
             Ticket tck = new Ticket(tckId, matchId, s.getSeatId(), customerIdentifier,
-                    s.getPrice(), TicketStatus.SOLD, LocalDateTime.now().toString());
+                    ticketRepo.getPriceBySeatId(s.getSeatId()), TicketStatus.SOLD,
+                    LocalDateTime.now().toString());
             ticketRepo.save(tck);
         }
 
@@ -139,6 +159,7 @@ public class StaffController {
                 "",
                 0.0);
         transactionRepo.save(txn);
+        notificationController.addBookingConfirmedNotification(txn);
         return txn;
     }
 
@@ -147,34 +168,48 @@ public class StaffController {
         if (txn == null) {
             return false;
         }
+        if (txn.getStatus() == TransactionStatus.CONFIRMED || txn.getStatus() == TransactionStatus.SUCCESS) {
+            notificationController.addBookingConfirmedNotification(txn);
+            return true;
+        }
+        if (txn.getStatus() != TransactionStatus.PENDING) {
+            return false;
+        }
         txn.setStatus(TransactionStatus.CONFIRMED);
         transactionRepo.save(txn);
+        for (Ticket ticket : getTransactionTickets(txn)) {
+            if (ticket.getStatus() == TicketStatus.RESERVED) {
+                ticket.setStatus(TicketStatus.SOLD);
+                ticketRepo.save(ticket);
+            }
+        }
+        notificationController.addBookingConfirmedNotification(txn);
         return true;
     }
 
-    public boolean confirmTicketRefund(String ticketId) throws IOException {
-        Ticket ticket = ticketRepo.findById(ticketId);
-        if (ticket == null || ticket.getStatus() == TicketStatus.REFUNDED) {
-            return false;
-        }
-        try {
-            if (!RefundPolicy.isRefundAllowed(matchRepo.findById(ticket.getMatchId()), LocalDateTime.now())) {
-                return false;
+    public List<Transaction> getPendingApprovalTransactions() throws IOException {
+        List<Transaction> pending = new ArrayList<>();
+        for (Transaction txn : transactionRepo.findAll()) {
+            if (txn.getStatus() == TransactionStatus.PENDING) {
+                pending.add(txn);
             }
-        } catch (IllegalArgumentException e) {
-            return false;
         }
-        ticket.setStatus(TicketStatus.REFUNDED);
-        ticketRepo.save(ticket);
+        return pending;
+    }
 
-        if (ticket.getSeatId() != null) {
-            Seat seat = seatRepo.findById(ticket.getSeatId());
-            if (seat != null) {
-                seat.setStatus(SeatStatus.AVAILABLE);
-                seatRepo.save(seat);
+    private List<Ticket> getTransactionTickets(Transaction txn) throws IOException {
+        List<Ticket> tickets = ticketRepo.findByTransactionId(txn.getTransactionId());
+        if (!tickets.isEmpty()) {
+            return tickets;
+        }
+        List<Ticket> result = new ArrayList<>();
+        for (String seatId : txn.getSeatIds()) {
+            Ticket ticket = ticketRepo.findBySeatId(seatId);
+            if (ticket != null) {
+                result.add(ticket);
             }
         }
-        return true;
+        return result;
     }
 
     public List<Seat> getRealTimeSeatingChart(String matchId) throws IOException {
@@ -192,10 +227,14 @@ public class StaffController {
         double totalRevenue = 0.0;
         int totalRefunds = 0;
         for (Transaction txn : transactionRepo.findAll()) {
-            if (txn.getStatus() == TransactionStatus.CONFIRMED || txn.getStatus() == TransactionStatus.SUCCESS) {
+            if (txn.getStatus() == TransactionStatus.CONFIRMED || txn.getStatus() == TransactionStatus.SUCCESS
+                    || txn.getStatus() == TransactionStatus.REFUNDED) {
                 totalTicketsSold += txn.getSeatIds().size();
-                totalRevenue += txn.getTotalAmount();
-            } else if (txn.getStatus() == TransactionStatus.REFUNDED) {
+                totalRevenue += txn.getNetAmount();
+            }
+        }
+        for (Ticket ticket : ticketRepo.findAll()) {
+            if (ticket.getStatus() == TicketStatus.REFUNDED) {
                 totalRefunds++;
             }
         }
@@ -205,5 +244,45 @@ public class StaffController {
         sb.append("Total Revenue: ").append(String.format("%,.0f VND", totalRevenue)).append("\n");
         sb.append("Total Refunds Processed: ").append(totalRefunds).append("\n");
         return sb.toString();
+    }
+
+    public List<SupportRequest> getAllSupportRequests() throws IOException {
+        return supportRepo.findAll();
+    }
+
+    public List<SupportRequest> getOpenSupportRequests() throws IOException {
+        List<SupportRequest> list = new ArrayList<>();
+        for (SupportRequest req : supportRepo.findAll()) {
+            if (req.getStatus() == SupportStatus.OPEN || req.getStatus() == SupportStatus.PENDING) {
+                list.add(req);
+            }
+        }
+        return list;
+    }
+
+    public SupportRequest getSupportRequestById(String requestId) throws IOException {
+        if (requestId == null || requestId.trim().isEmpty()) {
+            return null;
+        }
+        return supportRepo.findById(requestId.trim());
+    }
+
+    public boolean respondToSupportRequest(String requestId, String responseMessage, SupportStatus status) throws IOException {
+        if (requestId == null || requestId.trim().isEmpty()
+                || responseMessage == null || responseMessage.trim().isEmpty()) {
+            return false;
+        }
+        SupportRequest req = supportRepo.findById(requestId.trim());
+        if (req == null) {
+            return false;
+        }
+        req.setResponse(responseMessage.trim());
+        req.setStatus(status != null ? status : SupportStatus.RESOLVED);
+        supportRepo.save(req);
+        return true;
+    }
+
+    public boolean respondToSupportRequest(String requestId, String responseMessage) throws IOException {
+        return respondToSupportRequest(requestId, responseMessage, SupportStatus.RESOLVED);
     }
 }

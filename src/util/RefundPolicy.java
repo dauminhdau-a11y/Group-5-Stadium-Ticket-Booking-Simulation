@@ -5,13 +5,13 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 
-public final class RefundPolicy {
-    public static final long MIN_HOURS_BEFORE_KICKOFF = 12;
+public class RefundPolicy {
+    public long MIN_HOURS_BEFORE_KICKOFF = 12;
 
-    private RefundPolicy() {
+    public RefundPolicy() {
     }
 
-    public static LocalDateTime getKickoff(Match match) {
+    public LocalDateTime getKickoff(Match match) {
         if (match == null || match.getMatchDate() == null
                 || match.getMatchTime() == null || match.getMatchTime().trim().isEmpty()) {
             throw new IllegalArgumentException(
@@ -27,7 +27,7 @@ public final class RefundPolicy {
         }
     }
 
-    public static boolean isRefundAllowed(Match match, LocalDateTime requestTime) {
+    public boolean isRefundAllowed(Match match, LocalDateTime requestTime) {
         if (requestTime == null) {
             throw new IllegalArgumentException("Refund request time must not be null.");
         }

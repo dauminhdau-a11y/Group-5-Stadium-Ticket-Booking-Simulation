@@ -2,7 +2,6 @@ package repository;
 
 import model.Seat;
 import model.Section;
-import model.enums.SeatType;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -40,7 +39,9 @@ public class SeatRepository extends CsvRepository<Seat> {
     @Override
     public boolean isHeaderLine(String line) {
         String header = line.trim();
-        return "seatId,sectionId,rowLabel,seatNumber,state,version".equalsIgnoreCase(header)
+        return "seatId,matchId,sectionId,rowLabel,seatNumber,status,version".equalsIgnoreCase(header)
+                || "seatId,sectionId,rowLabel,seatNumber,state,version".equalsIgnoreCase(header)
+                || "seatId,matchId,status,stand,price,version".equalsIgnoreCase(header)
                 || "seatId,matchId,status,seatType,price,version".equalsIgnoreCase(header);
     }
 
@@ -56,8 +57,7 @@ public class SeatRepository extends CsvRepository<Seat> {
                 if (seat.getSectionId() != null && !seat.getSectionId().isEmpty()) {
                     Section section = sectionsById.get(seat.getSectionId());
                     if (section != null) {
-                        SeatType seatType = SeatType.valueOf(section.getType().name());
-                        seat.setSectionDetails(seatType, section.getPrice());
+                        seat.setSectionDetails(section.getStand(), section.getPrice());
                     }
                 }
             }

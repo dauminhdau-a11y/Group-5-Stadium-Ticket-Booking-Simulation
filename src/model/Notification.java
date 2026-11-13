@@ -73,30 +73,28 @@ public class Notification extends BaseEntity {
     public Notification fromCsvLine(String line) {
         List<String> values = parseCsvLine(line);
         if (values.size() != 5) {
-            throw new IllegalArgumentException("Invalid Notification CSV data");
+            throw new IllegalArgumentException("Invalid notification CSV data.");
         }
         if (!"true".equalsIgnoreCase(values.get(4))
                 && !"false".equalsIgnoreCase(values.get(4))) {
-            throw new IllegalArgumentException("Invalid notification read status");
+            throw new IllegalArgumentException("Invalid notification read status.");
         }
-
         String timestamp = values.get(3);
         return new Notification(values.get(0), values.get(1), values.get(2),
                 timestamp.isEmpty() ? LocalDateTime.now() : LocalDateTime.parse(timestamp),
                 Boolean.parseBoolean(values.get(4)));
     }
 
-    public String csvField(String value) {
+    private String csvField(String value) {
         String safeValue = value == null ? "" : value.replace("\\", "\\\\")
                 .replace("\r", "\\r").replace("\n", "\\n");
         return "\"" + safeValue.replace("\"", "\"\"") + "\"";
     }
 
-    public List<String> parseCsvLine(String line) {
+    private List<String> parseCsvLine(String line) {
         List<String> values = new ArrayList<>();
         StringBuilder value = new StringBuilder();
         boolean quoted = false;
-
         for (int i = 0; i < line.length(); i++) {
             char current = line.charAt(i);
             if (current == '"') {
@@ -113,15 +111,14 @@ public class Notification extends BaseEntity {
                 value.append(current);
             }
         }
-
         if (quoted) {
-            throw new IllegalArgumentException("Invalid Notification CSV quoting");
+            throw new IllegalArgumentException("Invalid notification CSV quoting.");
         }
         values.add(unescapeLineBreaks(value.toString()));
         return values;
     }
 
-    public String unescapeLineBreaks(String value) {
+    private String unescapeLineBreaks(String value) {
         StringBuilder unescaped = new StringBuilder(value.length());
         for (int i = 0; i < value.length(); i++) {
             char current = value.charAt(i);

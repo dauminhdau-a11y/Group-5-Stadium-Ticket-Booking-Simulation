@@ -5,5 +5,6 @@ public enum TransactionStatus {
     CONFIRMED,
     SUCCESS,
     CANCELLED,
+    REFUND_REQUESTED,
     REFUNDED
 }

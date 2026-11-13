@@ -59,6 +59,19 @@ public class VoucherController {
         return true;
     }
 
+    public boolean updateVoucher(String code, double discountPercent, double discountAmount,
+            double minimumOrderAmount) throws IOException {
+        Voucher voucher = voucherRepository.findById(code);
+        if (voucher == null) {
+            return false;
+        }
+        voucher.setDiscountPercent(discountPercent);
+        voucher.setDiscountAmount(discountAmount);
+        voucher.setMinimumOrderAmount(minimumOrderAmount);
+        voucherRepository.save(voucher);
+        return true;
+    }
+
     public boolean removeVoucher(String code) throws IOException {
         return voucherRepository.deleteById(code);
     }
@@ -68,8 +81,8 @@ public class VoucherController {
             return 0.0;
         }
         Voucher voucher = voucherRepository.findById(code.trim());
-        if (voucher == null || voucher.isUsed()) {
-            throw new VoucherInvalidException("Voucher is invalid or has already been used: " + code);
+        if (voucher == null) {
+            throw new VoucherInvalidException("Voucher does not exist: " + code);
         }
         return voucher.calculateDiscount(orderAmount);
     }

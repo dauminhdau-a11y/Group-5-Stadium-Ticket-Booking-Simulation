@@ -3,10 +3,10 @@ package util;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class CsvParser {
-    private CsvParser() { }
+public class CsvParser {
+    public CsvParser() { }
 
-    public static List<String> parseLine(String line) {
+    public List<String> parseLine(String line) {
         List<String> fields = new ArrayList<String>();
         if (line == null) {
             fields.add("");
@@ -36,7 +36,7 @@ public final class CsvParser {
         return fields;
     }
 
-    public static List<String> parseRecords(String content) {
+    public List<String> parseRecords(String content) {
         List<String> records = new ArrayList<String>();
         if (content == null || content.isEmpty()) {
             return records;
@@ -71,7 +71,7 @@ public final class CsvParser {
         return records;
     }
 
-    public static String encode(String... fields) {
+    public String encode(String... fields) {
         StringBuilder row = new StringBuilder();
         for (int i = 0; i < fields.length; i++) {
             if (i > 0) {

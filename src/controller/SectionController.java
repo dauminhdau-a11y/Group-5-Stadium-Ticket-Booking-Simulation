@@ -1,7 +1,7 @@
 package controller;
 
 import model.Section;
-import model.enums.SectionType;
+import model.enums.Stand;
 import repository.SectionRepository;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -48,7 +48,8 @@ public class SectionController {
     }
 
     public boolean createSection(Section section) throws IOException {
-        if (section == null || section.getSectionId() == null || section.getSectionId().trim().isEmpty()) {
+        if (section == null || section.getSectionId() == null || section.getSectionId().trim().isEmpty()
+                || section.getStand() == null) {
             return false;
         }
         if (sectionRepository.findById(section.getSectionId()) != null) {
@@ -58,7 +59,7 @@ public class SectionController {
         return true;
     }
 
-    public boolean updateSection(String sectionId, String name, SectionType type, int capacity, double price) throws IOException {
+    public boolean updateSection(String sectionId, String name, Stand stand, int capacity, double price) throws IOException {
         Section section = sectionRepository.findById(sectionId);
         if (section == null) {
             return false;
@@ -66,8 +67,8 @@ public class SectionController {
         if (name != null && !name.trim().isEmpty()) {
             section.setName(name.trim());
         }
-        if (type != null) {
-            section.setType(type);
+        if (stand != null) {
+            section.setStand(stand);
         }
         if (capacity > 0) {
             section.setCapacity(capacity);

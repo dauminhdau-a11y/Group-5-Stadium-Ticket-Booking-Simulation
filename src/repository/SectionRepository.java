@@ -18,6 +18,8 @@ public class SectionRepository extends CsvRepository<Section> {
 
     @Override
     public boolean isHeaderLine(String line) {
-        return "sectionId,stadiumId,name,type,capacity,price".equalsIgnoreCase(line.trim());
+        String header = line.trim();
+        return "sectionId,stadiumId,name,stand,capacity,price".equalsIgnoreCase(header)
+                || "sectionId,stadiumId,name,type,capacity,price".equalsIgnoreCase(header);
     }
 }
