@@ -124,11 +124,11 @@ public class SeatMapView {
         long bookedCount = seats.stream().filter(s -> s.getStatus() == SeatStatus.BOOKED).count();
 
         System.out.println("\n[*] SEAT STATUS LEGEND:");
-        System.out.println("   " + formatSeatBadge("[O]", GREEN) + "  : AVAILABLE  -  Seat is open and ready to book");
-        System.out.println("   " + formatSeatBadge("[L]", YELLOW) + "  : LOCKED     -  Seat is temporarily held in checkout (10 mins hold)");
-        System.out.println("   " + formatSeatBadge("[X]", RED) + "  : BOOKED     -  Seat is already reserved / purchased");
+        System.out.println("   " + formatSeatBadge("[O]", GREEN) + "  : AVAILABLE  -  Ghế trống (Sẵn sàng đặt)");
+        System.out.println("   " + formatSeatBadge("[L]", YELLOW) + "  : LOCKED     -  Tạm giữ (Đang giữ chỗ / Đã đặt chờ Staff xác nhận)");
+        System.out.println("   " + formatSeatBadge("[X]", RED) + "  : BOOKED     -  Đã đặt (Staff đã xác nhận thanh toán)");
 
-        System.out.printf("\n[#] Statistics (%s): Total: %d seats | %sAvailable: %d%s | %sLocked: %d%s | %sBooked: %d%s%n",
+        System.out.printf("\n[#] Statistics (%s): Total: %d seats | %sAvailable: %d%s | %sTạm giữ (Locked/Pending): %d%s | %sBooked: %d%s%n",
                 matchId, seats.size(),
                 GREEN, availableCount, RESET,
                 YELLOW, lockedCount, RESET,

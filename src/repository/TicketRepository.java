@@ -164,15 +164,17 @@ public class TicketRepository extends CsvRepository<Ticket> {
 
     public double getPriceBySeatId(String seatId) throws IOException {
         Ticket ticket = findBySeatId(seatId);
-        if (ticket == null) {
-            throw new IllegalArgumentException("No ticket price found for seat " + seatId);
-        }
-        Seat seat = seatRepository.findById(seatId);
+        Seat seat = seatRepository != null ? seatRepository.findById(seatId) : null;
         if (seat != null && seat.getStand() != null
-                && ticket.getMatchId() != null
-                && ticket.getMatchId().equalsIgnoreCase(seat.getMatchId())) {
+                && (ticket == null || ticket.getMatchId() == null || ticket.getMatchId().equalsIgnoreCase(seat.getMatchId()))) {
             return seat.getPrice();
         }
-        return ticket.getPrice();
+        if (ticket != null && ticket.getPrice() > 0) {
+            return ticket.getPrice();
+        }
+        if (seat != null && seat.getPrice() > 0) {
+            return seat.getPrice();
+        }
+        throw new IllegalArgumentException("No ticket price found for seat " + seatId);
     }
 }

@@ -281,11 +281,11 @@ public class TransactionView {
         double discountAmount = 0.0;
         double finalAmount = subtotal;
 
-        List<Voucher> applicableVouchers = transactionController.getApplicableVouchers(subtotal);
+        List<Voucher> applicableVouchers = transactionController.getApplicableVouchers(fanId, subtotal);
         if (applicableVouchers.isEmpty()) {
-            System.out.println("No voucher is applicable to this order.");
+            System.out.println("No voucher is applicable to this order (or you have already used eligible vouchers).");
         } else {
-            System.out.println("\nVouchers applicable to this order (choose at most one):");
+            System.out.println("\nVouchers applicable to this order (choose at most one, each voucher can only be used once per account):");
             for (Voucher voucher : applicableVouchers) {
                 String discountType = voucher.getDiscountPercent() > 0
                         ? String.format("%.0f%% OFF", voucher.getDiscountPercent())
@@ -304,7 +304,7 @@ public class TransactionView {
                         break;
                     }
                     try {
-                        Voucher voucher = transactionController.validateAndCheckVoucher(inputVoucher, subtotal);
+                        Voucher voucher = transactionController.validateAndCheckVoucher(fanId, inputVoucher, subtotal);
                         if (voucher != null) {
                             appliedVoucherCode = voucher.getCode();
                             discountAmount = voucher.calculateDiscount(subtotal);

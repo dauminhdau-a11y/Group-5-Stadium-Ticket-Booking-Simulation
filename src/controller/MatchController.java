@@ -56,18 +56,22 @@ public class MatchController {
     }
 
     public MatchStatus getCurrentStatus(Match match) {
-        return getCurrentStatus(match, LocalDateTime.now());
+        return getCurrentStatusAt(match, LocalDateTime.now());
     }
 
     public MatchStatus getCurrentStatus(Match match, LocalDateTime currentTime) {
+        return getCurrentStatusAt(match, currentTime);
+    }
+
+    public static MatchStatus getCurrentStatusAt(Match match, LocalDateTime currentTime) {
         if (match == null) {
             throw new IllegalArgumentException("Match must not be null.");
         }
         if (currentTime == null) {
             throw new IllegalArgumentException("Current time must not be null.");
         }
-        if (match.getStatus() == MatchStatus.CANCELLED) {
-            return MatchStatus.CANCELLED;
+        if (match.getStatus() == MatchStatus.CANCELLED || match.getStatus() == MatchStatus.FINISHED) {
+            return match.getStatus();
         }
         if (match.getMatchDate() == null || match.getMatchTime() == null
                 || match.getMatchTime().trim().isEmpty()) {
@@ -177,7 +181,8 @@ public class MatchController {
                             && match.getStadium().toLowerCase(Locale.ROOT).contains(stadiumQuery));
             List<Seat> matchSeats = seatsByMatch.get(match.getMatchId().toUpperCase(Locale.ROOT));
             boolean seatsMatch = !onlyAvailableSeats
-                    || (matchSeats != null && matchSeats.stream()
+                    || (getCurrentStatus(match, currentTime) != MatchStatus.FINISHED
+                            && matchSeats != null && matchSeats.stream()
                             .anyMatch(seat -> seat.getStatus() == SeatStatus.AVAILABLE));
             if (statusMatch && dateMatch && priceMatch && stadiumMatch && seatsMatch) {
                 results.add(match);

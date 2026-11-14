@@ -18,7 +18,9 @@ import repository.TransactionRepository;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 public class StaffController {
@@ -139,11 +141,22 @@ public class StaffController {
             s.setStatus(SeatStatus.BOOKED);
             seatRepo.save(s);
 
-            String tckId = "TCK-" + UUID.randomUUID().toString().substring(0, 8);
-            Ticket tck = new Ticket(tckId, matchId, s.getSeatId(), customerIdentifier,
-                    ticketRepo.getPriceBySeatId(s.getSeatId()), TicketStatus.SOLD,
-                    LocalDateTime.now().toString());
-            ticketRepo.save(tck);
+            Ticket existing = ticketRepo.findBySeatId(s.getSeatId());
+            if (existing != null && (existing.getStatus() == TicketStatus.AVAILABLE
+                    || existing.getTransactionId() == null || existing.getTransactionId().trim().isEmpty())) {
+                existing.setTransactionId("");
+                existing.setFanId(customerIdentifier);
+                existing.setStatus(TicketStatus.SOLD);
+                existing.setPrice(ticketRepo.getPriceBySeatId(s.getSeatId()));
+                existing.setBookingDate(LocalDateTime.now().toString());
+                ticketRepo.save(existing);
+            } else {
+                String tckId = "TCK-" + UUID.randomUUID().toString().substring(0, 8);
+                Ticket tck = new Ticket(tckId, matchId, s.getSeatId(), customerIdentifier,
+                        ticketRepo.getPriceBySeatId(s.getSeatId()), TicketStatus.SOLD,
+                        LocalDateTime.now().toString());
+                ticketRepo.save(tck);
+            }
         }
 
         String txnId = "TXN-" + UUID.randomUUID().toString().substring(0, 8);
@@ -183,6 +196,13 @@ public class StaffController {
                 ticketRepo.save(ticket);
             }
         }
+        for (String seatId : txn.getSeatIds()) {
+            Seat seat = seatRepo.findById(seatId);
+            if (seat != null) {
+                seat.confirmBooked();
+                seatRepo.save(seat);
+            }
+        }
         notificationController.addBookingConfirmedNotification(txn);
         return true;
     }
@@ -214,8 +234,19 @@ public class StaffController {
 
     public List<Seat> getRealTimeSeatingChart(String matchId) throws IOException {
         List<Seat> result = new ArrayList<>();
+        Set<String> pendingSeatIds = new HashSet<>();
+        for (Transaction txn : transactionRepo.findAll()) {
+            if (txn.getStatus() == TransactionStatus.PENDING) {
+                if (txn.getSeatIds() != null) {
+                    pendingSeatIds.addAll(txn.getSeatIds());
+                }
+            }
+        }
         for (Seat seat : seatRepo.findAll()) {
             if (matchId == null || matchId.equalsIgnoreCase(seat.getMatchId())) {
+                if (pendingSeatIds.contains(seat.getSeatId())) {
+                    seat.setStatus(SeatStatus.LOCKED);
+                }
                 result.add(seat);
             }
         }

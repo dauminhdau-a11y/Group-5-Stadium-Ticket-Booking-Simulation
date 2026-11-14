@@ -5,6 +5,7 @@ import model.Seat;
 import model.Ticket;
 import model.Transaction;
 import model.Voucher;
+import model.enums.MatchStatus;
 import model.enums.PaymentMethod;
 import model.enums.SeatStatus;
 import model.enums.SyncMechanism;
@@ -20,7 +21,9 @@ import util.TicketRefundCalculator;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -177,6 +180,9 @@ public class TransactionController {
     }
 
     public boolean isMatchSoldOut(String matchId) throws IOException {
+        if (isMatchFinished(matchId)) {
+            return true;
+        }
         List<Seat> seats = seatRepo.findByCondition(s -> s.getMatchId().equalsIgnoreCase(matchId));
         if (seats.isEmpty()) {
             return false;
@@ -194,14 +200,15 @@ public class TransactionController {
 
             boolean matchStadium = true;
             if (stadium != null && !stadium.trim().isEmpty()) {
-                matchStadium = m.getStadium() != null && m.getStadium().toLowerCase().contains(stadium.trim().toLowerCase());
+                matchStadium = m.getStadium() != null
+                        && m.getStadium().toLowerCase().contains(stadium.trim().toLowerCase());
             }
 
             boolean matchTeam = true;
             if (team != null && !team.trim().isEmpty()) {
                 String q = team.trim().toLowerCase();
                 matchTeam = (m.getHomeTeam() != null && m.getHomeTeam().toLowerCase().contains(q)) ||
-                            (m.getAwayTeam() != null && m.getAwayTeam().toLowerCase().contains(q));
+                        (m.getAwayTeam() != null && m.getAwayTeam().toLowerCase().contains(q));
             }
 
             return matchDate && matchStadium && matchTeam;
@@ -210,11 +217,25 @@ public class TransactionController {
 
     public int HOLD_TIMEOUT_MINUTES = 10;
 
+    public Set<String> getPendingTransactionSeatIds() throws IOException {
+        Set<String> pendingSeatIds = new HashSet<>();
+        for (Transaction txn : transactionRepo.findAll()) {
+            if (txn.getStatus() == TransactionStatus.PENDING) {
+                if (txn.getSeatIds() != null) {
+                    pendingSeatIds.addAll(txn.getSeatIds());
+                }
+            }
+        }
+        return pendingSeatIds;
+    }
+
     public synchronized int releaseExpiredSeats() throws IOException {
         List<Seat> allSeats = seatRepo.findAll();
+        Set<String> pendingSeatIds = getPendingTransactionSeatIds();
         int releasedCount = 0;
         for (Seat seat : allSeats) {
-            if (seat.getStatus() == SeatStatus.LOCKED && seat.isHoldExpired(HOLD_TIMEOUT_MINUTES)) {
+            if (seat.getStatus() == SeatStatus.LOCKED && !pendingSeatIds.contains(seat.getSeatId())
+                    && seat.isHoldExpired(HOLD_TIMEOUT_MINUTES)) {
                 seat.unlock();
                 seatRepo.save(seat);
                 releasedCount++;
@@ -223,7 +244,9 @@ public class TransactionController {
         return releasedCount;
     }
 
-    public synchronized List<Seat> holdSeatsForPayment(String fanId, String matchId, List<String> seatIds) throws IOException {
+    public synchronized List<Seat> holdSeatsForPayment(String fanId, String matchId, List<String> seatIds)
+            throws IOException {
+        ensureMatchNotFinished(matchId);
         releaseExpiredSeats();
 
         if (seatIds == null || seatIds.isEmpty()) {
@@ -239,12 +262,15 @@ public class TransactionController {
             throw new IllegalArgumentException("A seat cannot be selected more than once.");
         }
 
+        Set<String> pendingSeatIds = getPendingTransactionSeatIds();
+
         for (String seatId : seatIds) {
             Seat seat = seatRepo.findById(seatId);
             if (seat == null) {
                 throw new IllegalArgumentException("Seat ID not found: " + seatId);
             }
-            if (seat.getMatchId() != null && !seat.getMatchId().isEmpty() && !seat.getMatchId().equalsIgnoreCase(matchId)) {
+            if (seat.getMatchId() != null && !seat.getMatchId().isEmpty()
+                    && !seat.getMatchId().equalsIgnoreCase(matchId)) {
                 throw new IllegalArgumentException("Seat " + seatId + " does not belong to match " + matchId);
             }
 
@@ -252,11 +278,17 @@ public class TransactionController {
                 throw new IllegalArgumentException("Seat " + seatId + " has already been booked by another customer.");
             }
 
+            if (pendingSeatIds.contains(seat.getSeatId())) {
+                throw new IllegalArgumentException("Seat " + seatId + " is currently booked and awaiting staff confirmation (Tạm giữ). Please choose another seat!");
+            }
+
             if (seat.getStatus() == SeatStatus.LOCKED) {
                 if (seat.getLockedBy() != null && !seat.getLockedBy().equalsIgnoreCase(fanId)) {
                     long remSeconds = seat.getRemainingHoldSeconds(HOLD_TIMEOUT_MINUTES);
                     long remMinutes = remSeconds / 60;
-                    throw new IllegalArgumentException("Seat " + seatId + " is currently LOCKED by another customer for checkout (~" + (remMinutes + 1) + " minute(s) remaining). Please choose another seat!");
+                    throw new IllegalArgumentException(
+                            "Seat " + seatId + " is currently LOCKED by another customer for checkout (~"
+                                    + (remMinutes + 1) + " minute(s) remaining). Please choose another seat!");
                 }
             }
 
@@ -272,10 +304,12 @@ public class TransactionController {
     }
 
     public synchronized void cancelHoldSeats(String fanId, List<String> seatIds) throws IOException {
-        if (seatIds == null) return;
+        if (seatIds == null)
+            return;
+        Set<String> pendingSeatIds = getPendingTransactionSeatIds();
         for (String seatId : seatIds) {
             Seat seat = seatRepo.findById(seatId);
-            if (seat != null && seat.getStatus() == SeatStatus.LOCKED) {
+            if (seat != null && seat.getStatus() == SeatStatus.LOCKED && !pendingSeatIds.contains(seat.getSeatId())) {
                 if (seat.getLockedBy() == null || seat.getLockedBy().equalsIgnoreCase(fanId)) {
                     seat.unlock();
                     seatRepo.save(seat);
@@ -286,10 +320,20 @@ public class TransactionController {
 
     public List<Seat> getAllSeatsForMatch(String matchId) throws IOException {
         releaseExpiredSeats();
-        return seatRepo.findByCondition(seat -> seat.getMatchId().equalsIgnoreCase(matchId));
+        List<Seat> seats = seatRepo.findByCondition(seat -> seat.getMatchId().equalsIgnoreCase(matchId));
+        Set<String> pendingSeatIds = getPendingTransactionSeatIds();
+        for (Seat seat : seats) {
+            if (pendingSeatIds.contains(seat.getSeatId())) {
+                seat.setStatus(SeatStatus.LOCKED);
+            }
+        }
+        return seats;
     }
 
     public List<Seat> getAvailableSeats(String matchId) throws IOException {
+        if (isMatchFinished(matchId)) {
+            return new ArrayList<>();
+        }
         return seatRepo.findByCondition(
                 seat -> seat.getMatchId().equalsIgnoreCase(matchId) && seat.getStatus() == SeatStatus.AVAILABLE);
     }
@@ -299,6 +343,7 @@ public class TransactionController {
     }
 
     public List<Seat> validateAndGetSeats(String fanId, String matchId, List<String> seatIds) throws IOException {
+        ensureMatchNotFinished(matchId);
         releaseExpiredSeats();
 
         if (seatIds == null || seatIds.isEmpty()) {
@@ -318,7 +363,8 @@ public class TransactionController {
             if (seat == null) {
                 throw new IllegalArgumentException("Seat ID not found: " + seatId);
             }
-            if (seat.getMatchId() != null && !seat.getMatchId().isEmpty() && !seat.getMatchId().equalsIgnoreCase(matchId)) {
+            if (seat.getMatchId() != null && !seat.getMatchId().isEmpty()
+                    && !seat.getMatchId().equalsIgnoreCase(matchId)) {
                 throw new IllegalArgumentException("Seat " + seatId + " does not belong to match " + matchId);
             }
             if (seat.getStatus() == SeatStatus.BOOKED) {
@@ -328,12 +374,26 @@ public class TransactionController {
                 if (fanId != null && seat.getLockedBy() != null && !seat.getLockedBy().equalsIgnoreCase(fanId)) {
                     long remSeconds = seat.getRemainingHoldSeconds(HOLD_TIMEOUT_MINUTES);
                     long remMinutes = remSeconds / 60;
-                    throw new IllegalArgumentException("Seat " + seatId + " is currently LOCKED by another customer for checkout (~" + (remMinutes + 1) + " minute(s) remaining). Please choose another seat!");
+                    throw new IllegalArgumentException(
+                            "Seat " + seatId + " is currently LOCKED by another customer for checkout (~"
+                                    + (remMinutes + 1) + " minute(s) remaining). Please choose another seat!");
                 }
             }
             seatsForTransaction.add(seat);
         }
         return seatsForTransaction;
+    }
+
+    private boolean isMatchFinished(String matchId) throws IOException {
+        Match match = matchRepo.findById(matchId);
+        return match != null
+                && MatchController.getCurrentStatusAt(match, LocalDateTime.now()) == MatchStatus.FINISHED;
+    }
+
+    private void ensureMatchNotFinished(String matchId) throws IOException {
+        if (isMatchFinished(matchId)) {
+            throw new IllegalArgumentException("Tickets cannot be booked for a finished match.");
+        }
     }
 
     public double calculateSubtotal(List<Seat> seats) throws IOException {
@@ -346,6 +406,23 @@ public class TransactionController {
 
     public double getTicketPrice(Seat seat) throws IOException {
         return ticketRepo.getPriceBySeatId(seat.getSeatId());
+    }
+
+    public boolean hasUserUsedVoucher(String fanId, String voucherCode) throws IOException {
+        if (fanId == null || fanId.trim().isEmpty() || voucherCode == null || voucherCode.trim().isEmpty()) {
+            return false;
+        }
+        String normalizedFanId = fanId.trim();
+        String normalizedVoucher = voucherCode.trim();
+        for (Transaction txn : transactionRepo.findAll()) {
+            if (normalizedFanId.equalsIgnoreCase(txn.getFanId())
+                    && normalizedVoucher.equalsIgnoreCase(txn.getVoucherCode())) {
+                if (txn.getStatus() != TransactionStatus.CANCELLED) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     public Voucher validateAndCheckVoucher(String voucherCode) throws IOException {
@@ -369,11 +446,28 @@ public class TransactionController {
         return voucher;
     }
 
+    public Voucher validateAndCheckVoucher(String fanId, String voucherCode, double orderAmount) throws IOException {
+        Voucher voucher = validateAndCheckVoucher(voucherCode, orderAmount);
+        if (voucher != null && fanId != null && !fanId.trim().isEmpty()) {
+            if (hasUserUsedVoucher(fanId, voucher.getCode())) {
+                throw new IllegalArgumentException(String.format(
+                        "Voucher '%s' has already been used by this account.", voucher.getCode()));
+            }
+        }
+        return voucher;
+    }
+
     public List<Voucher> getApplicableVouchers(double orderAmount) throws IOException {
+        return getApplicableVouchers(null, orderAmount);
+    }
+
+    public List<Voucher> getApplicableVouchers(String fanId, double orderAmount) throws IOException {
         List<Voucher> applicableVouchers = new ArrayList<>();
         for (Voucher voucher : voucherRepo.findAll()) {
             if (voucher.isApplicableTo(orderAmount)) {
-                applicableVouchers.add(voucher);
+                if (fanId == null || !hasUserUsedVoucher(fanId, voucher.getCode())) {
+                    applicableVouchers.add(voucher);
+                }
             }
         }
         return applicableVouchers;
@@ -385,7 +479,8 @@ public class TransactionController {
     }
 
     public Transaction createTransaction(String fanId, String matchId,
-            List<String> seatIds, String voucherCode, PaymentMethod paymentMethod, boolean autoConfirm) throws IOException {
+            List<String> seatIds, String voucherCode, PaymentMethod paymentMethod, boolean autoConfirm)
+            throws IOException {
         if (this.mechanism == SyncMechanism.SYNCHRONIZED) {
             synchronized (this) {
                 return processTransaction(fanId, matchId, seatIds, voucherCode, paymentMethod, autoConfirm);
@@ -401,7 +496,8 @@ public class TransactionController {
     }
 
     public Transaction processTransaction(String fanId, String matchId,
-            List<String> seatIds, String voucherCode, PaymentMethod paymentMethod, boolean autoConfirm) throws IOException {
+            List<String> seatIds, String voucherCode, PaymentMethod paymentMethod, boolean autoConfirm)
+            throws IOException {
         if (fanId == null || fanId.trim().isEmpty()) {
             throw new IllegalArgumentException("Fan ID is required.");
         }
@@ -412,7 +508,7 @@ public class TransactionController {
         Voucher appliedVoucher = null;
 
         if (voucherCode != null && !voucherCode.trim().isEmpty()) {
-            appliedVoucher = validateAndCheckVoucher(voucherCode, subtotal);
+            appliedVoucher = validateAndCheckVoucher(fanId, voucherCode, subtotal);
             if (appliedVoucher != null) {
                 discount = appliedVoucher.calculateDiscount(subtotal);
             }
@@ -425,13 +521,30 @@ public class TransactionController {
         TicketStatus initialTicketStatus = autoConfirm ? TicketStatus.SOLD : TicketStatus.RESERVED;
 
         for (Seat seat : seatsForTransaction) {
-            seat.confirmBooked();
+            if (autoConfirm) {
+                seat.confirmBooked();
+            } else {
+                seat.setStatus(SeatStatus.LOCKED);
+                seat.setLockedBy(fanId);
+                seat.setLockedAt(null);
+            }
             seatRepo.save(seat);
 
-            String ticketId = "TCK-" + UUID.randomUUID().toString().substring(0, 8);
-            Ticket ticket = new Ticket(ticketId, transId, seat.getSeatId(), matchId,
-                    ticketRepo.getPriceBySeatId(seat.getSeatId()), initialTicketStatus.name());
-            ticketRepo.save(ticket);
+            Ticket existingTicket = ticketRepo.findBySeatId(seat.getSeatId());
+            if (existingTicket != null && (existingTicket.getStatus() == TicketStatus.AVAILABLE
+                    || existingTicket.getTransactionId() == null
+                    || existingTicket.getTransactionId().trim().isEmpty())) {
+                existingTicket.setTransactionId(transId);
+                existingTicket.setMatchId(matchId);
+                existingTicket.setStatus(initialTicketStatus);
+                existingTicket.setPrice(ticketRepo.getPriceBySeatId(seat.getSeatId()));
+                ticketRepo.save(existingTicket);
+            } else {
+                String ticketId = "TCK-" + UUID.randomUUID().toString().substring(0, 8);
+                Ticket ticket = new Ticket(ticketId, transId, seat.getSeatId(), matchId,
+                        ticketRepo.getPriceBySeatId(seat.getSeatId()), initialTicketStatus.name());
+                ticketRepo.save(ticket);
+            }
         }
 
         Transaction transaction = new Transaction(
@@ -525,7 +638,8 @@ public class TransactionController {
         if (txn == null || (txn.getStatus() != TransactionStatus.CONFIRMED
                 && txn.getStatus() != TransactionStatus.SUCCESS
                 && txn.getStatus() != TransactionStatus.REFUND_REQUESTED)) {
-            return new RefundResult(false, "Ticket is not part of a paid and confirmed booking owned by this fan.", 0.0);
+            return new RefundResult(false, "Ticket is not part of a paid and confirmed booking owned by this fan.",
+                    0.0);
         }
         boolean previousRequestPending = ticket.getStatus() == TicketStatus.REFUND_REQUESTED;
         if (!previousRequestPending && ticket.getStatus() != TicketStatus.SOLD
@@ -540,7 +654,8 @@ public class TransactionController {
                     return new RefundResult(false, "The refund request deadline has passed.", 0.0);
                 }
             } catch (IllegalArgumentException e) {
-                return new RefundResult(false, "The refund request deadline has passed or match schedule is unavailable.", 0.0);
+                return new RefundResult(false,
+                        "The refund request deadline has passed or match schedule is unavailable.", 0.0);
             }
         }
 
@@ -598,6 +713,13 @@ public class TransactionController {
             if (ticket.getStatus() == TicketStatus.RESERVED) {
                 ticket.setStatus(TicketStatus.SOLD);
                 ticketRepo.save(ticket);
+            }
+        }
+        for (String seatId : txn.getSeatIds()) {
+            Seat seat = seatRepo.findById(seatId);
+            if (seat != null) {
+                seat.confirmBooked();
+                seatRepo.save(seat);
             }
         }
         return true;

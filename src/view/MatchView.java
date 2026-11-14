@@ -63,8 +63,9 @@ public class MatchView {
                     : m.getMatchDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
                             + " " + m.getMatchTime();
             List<Seat> matchSeats = seatsByMatch.get(m.getMatchId().toUpperCase(Locale.ROOT));
+            MatchStatus status = matchController.getCurrentStatus(m, currentTime);
             int availableSeats = 0;
-            if (matchSeats != null) {
+            if (status != MatchStatus.FINISHED && matchSeats != null) {
                 for (Seat seat : matchSeats) {
                     if (seat.getStatus() == SeatStatus.AVAILABLE) {
                         availableSeats++;
@@ -72,7 +73,6 @@ public class MatchView {
                 }
             }
             String seatsLeft = availableSeats + "/" + (matchSeats == null ? 0 : matchSeats.size());
-            MatchStatus status = matchController.getCurrentStatus(m, currentTime);
             System.out.printf("%-10s | %-43s | %-28s | %-16s | %-12s | %-10s%n",
                     m.getMatchId(), fixture, m.getStadium() == null ? "-" : m.getStadium(), kickoff,
                     seatsLeft, status);

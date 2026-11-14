@@ -119,7 +119,7 @@ public class FanView {
                         }
                         break;
                     case "7":
-                        checkVouchers(voucherController);
+                        checkVouchers(fan.getId(), voucherController, transactionController);
                         break;
                     case "8":
                         viewBookingHistory(fan.getId(), transactionController);
@@ -231,6 +231,11 @@ public class FanView {
     }
 
     public void checkVouchers(VoucherController voucherController) {
+        checkVouchers(null, voucherController, null);
+    }
+
+    public void checkVouchers(String fanId, VoucherController voucherController,
+            TransactionController transactionController) {
         try {
             List<Voucher> vouchers = voucherController.getAllVouchers();
             if (vouchers.isEmpty()) {
@@ -239,13 +244,16 @@ public class FanView {
             }
 
             System.out.println("\n--- AVAILABLE VOUCHERS AND CONDITIONS ---");
-            System.out.println("One voucher can be applied per transaction. Vouchers may be reused in later transactions.");
+            System.out.println("One voucher can be applied per transaction. Each voucher can only be used once per account.");
             for (Voucher voucher : vouchers) {
+                boolean used = transactionController != null && fanId != null
+                        && transactionController.hasUserUsedVoucher(fanId, voucher.getCode());
                 String discountStr = voucher.getDiscountPercent() > 0
                         ? String.format("%.0f%% OFF", voucher.getDiscountPercent())
                         : String.format("%,.0f VND OFF", voucher.getDiscountAmount());
-                System.out.printf("%-16s | %-16s | Minimum order: %,.0f VND%n",
-                        voucher.getCode(), discountStr, voucher.getMinimumOrderAmount());
+                String statusStr = used ? "[ALREADY USED BY YOUR ACCOUNT]" : "[AVAILABLE]";
+                System.out.printf(" - %-12s | %-12s | Minimum order: %,.0f VND | %s%n",
+                        voucher.getCode(), discountStr, voucher.getMinimumOrderAmount(), statusStr);
             }
         } catch (IOException e) {
             System.out.println("Unable to load vouchers: " + e.getMessage());
