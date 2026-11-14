@@ -2,6 +2,7 @@ package controller;
 
 import model.Match;
 import model.Seat;
+import model.Section;
 import model.enums.MatchStatus;
 import repository.MatchRepository;
 import repository.SeatRepository;
@@ -199,7 +200,83 @@ public class MatchController {
             return false;
         }
         matchRepository.save(match);
+        provisionSeats(match);
         return true;
+    }
+
+    private void provisionSeats(Match match) throws IOException {
+        if (match.getStadium() == null || seatRepository.getSectionRepository() == null) {
+            return;
+        }
+
+        String stadiumName = match.getStadium().trim();
+        List<Section> stadiumSections = new ArrayList<>();
+        for (Section section : seatRepository.getSectionRepository().findAll()) {
+            if (section.getStadiumId() != null
+                    && section.getSectionId() != null
+                    && !section.getSectionId().trim().isEmpty()
+                    && section.getStadiumId().trim().equalsIgnoreCase(stadiumName)
+                    && section.getCapacity() > 0) {
+                stadiumSections.add(section);
+            }
+        }
+        if (stadiumSections.isEmpty()) {
+            return;
+        }
+
+        List<Seat> allSeats = seatRepository.findAll();
+        Map<String, Integer> seatsBySection = new HashMap<>();
+        Set<String> usedSeatIds = new HashSet<>();
+        int nextSeatNumber = 0;
+        for (Seat seat : allSeats) {
+            if (seat.getSeatId() != null) {
+                usedSeatIds.add(seat.getSeatId());
+                if (seat.getSeatId().startsWith("SEAT_")) {
+                    nextSeatNumber = Math.max(nextSeatNumber,
+                            Integer.parseInt(seat.getSeatId().substring("SEAT_".length())));
+                }
+            }
+            if (seat.getMatchId() != null
+                    && seat.getMatchId().equalsIgnoreCase(match.getMatchId())
+                    && seat.getSectionId() != null) {
+                String sectionId = seat.getSectionId().toUpperCase(Locale.ROOT);
+                Integer count = seatsBySection.get(sectionId);
+                seatsBySection.put(sectionId, count == null ? 1 : count + 1);
+            }
+        }
+
+        List<Seat> newSeats = new ArrayList<>();
+        for (Section section : stadiumSections) {
+            String sectionId = section.getSectionId();
+            int existingCount = seatsBySection.containsKey(sectionId.toUpperCase(Locale.ROOT))
+                    ? seatsBySection.get(sectionId.toUpperCase(Locale.ROOT)) : 0;
+            for (int i = existingCount; i < section.getCapacity(); i++) {
+                String seatId;
+                do {
+                    seatId = String.format(Locale.ROOT, "SEAT_%05d", ++nextSeatNumber);
+                } while (usedSeatIds.contains(seatId));
+                usedSeatIds.add(seatId);
+
+                Seat seat = new Seat(seatId, match.getMatchId(), sectionId,
+                        rowLabel(i / 25), (i % 25) + 1, SeatStatus.AVAILABLE, 1);
+                seat.setStand(section.getStand());
+                seat.setPrice(section.getPrice());
+                newSeats.add(seat);
+            }
+        }
+
+        if (!newSeats.isEmpty()) {
+            allSeats.addAll(newSeats);
+            seatRepository.writeAll(allSeats);
+        }
+    }
+
+    private String rowLabel(int rowIndex) {
+        StringBuilder label = new StringBuilder();
+        for (int value = rowIndex; value >= 0; value = value / 26 - 1) {
+            label.append((char) ('A' + value % 26));
+        }
+        return label.reverse().toString();
     }
 
     public boolean updateMatchDetail(String matchId, String homeTeam, String awayTeam, String stadium) throws IOException {
